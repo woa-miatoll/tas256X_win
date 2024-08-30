@@ -3,8 +3,8 @@
 
 #ifdef ALLOC_PRAGMA
 #pragma alloc_text (INIT, DriverEntry)
-#pragma alloc_text (PAGE, Tas2562EvtDeviceAdd)
-#pragma alloc_text (PAGE, Tas2562EvtDriverContextCleanup)
+#pragma alloc_text (PAGE, AudFilterEvtDeviceAdd)
+#pragma alloc_text (PAGE, AudFilterEvtDriverContextCleanup)
 #endif
 
 NTSTATUS
@@ -22,9 +22,11 @@ DriverEntry(
     TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Entry");
 
     WDF_OBJECT_ATTRIBUTES_INIT(&attributes);
-    attributes.EvtCleanupCallback = Tas2562EvtDriverContextCleanup;
+    attributes.EvtCleanupCallback = AudFilterEvtDriverContextCleanup;
 
-    WDF_DRIVER_CONFIG_INIT(&config, Tas2562EvtDeviceAdd);
+    WDF_DRIVER_CONFIG_INIT(&config,
+                           AudFilterEvtDeviceAdd
+                           );
 
     status = WdfDriverCreate(DriverObject,
                              RegistryPath,
@@ -45,7 +47,7 @@ DriverEntry(
 }
 
 NTSTATUS
-Tas2562EvtDeviceAdd(
+AudFilterEvtDeviceAdd(
     _In_    WDFDRIVER       Driver,
     _Inout_ PWDFDEVICE_INIT DeviceInit
     )
@@ -58,7 +60,7 @@ Tas2562EvtDeviceAdd(
 
     TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Entry");
 
-    status = Tas2562CreateDevice(DeviceInit);
+    status = AudFilterCreateDevice(DeviceInit);
 
     TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Exit");
 
@@ -66,13 +68,15 @@ Tas2562EvtDeviceAdd(
 }
 
 VOID
-Tas2562EvtDriverContextCleanup(
+AudFilterEvtDriverContextCleanup(
     _In_ WDFOBJECT DriverObject
     )
 {
     PAGED_CODE();
 
     TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Entry");
-
+    if (DriverObject != NULL && DeviceGetContext(DriverObject) != NULL && DeviceGetContext(DriverObject)->CSAudioAPICallbackObj != NULL)
+        ExUnregisterCallback(DeviceGetContext(DriverObject)->CSAudioAPICallbackObj);
+    
     WPP_CLEANUP(WdfDriverWdmGetDriverObject((WDFDRIVER)DriverObject));
 }

@@ -1,0 +1,58 @@
+[Version]
+Signature   = "$WINDOWS NT$"
+Class       = System
+ClassGuid   = {4d36e97d-e325-11ce-bfc1-08002be10318}
+Provider    = %ManufacturerName%
+CatalogFile = AudFilter.cat
+DriverVer   = 
+PnpLockdown = 1
+
+[DestinationDirs]
+DefaultDestDir = 13
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+AudFilter.sys  = 1,,
+
+;*****************************************
+; Install Section
+;*****************************************
+
+[Manufacturer]
+%ManufacturerName% = Standard,NT$ARCH$.10.0...16299 ; %13% support introduced in build 16299
+
+[Standard.NT$ARCH$.10.0...16299]
+%AudFilter.DeviceDesc% = AudFilter_Device, ACPI\AFLT0001
+
+[AudFilter_Device.NT]
+CopyFiles = File_Copy
+
+[File_Copy]
+AudFilter.sys
+
+;-------------- Service installation
+[AudFilter_Device.NT.Services]
+AddService = AudFilter,%SPSVCINST_ASSOCSERVICE%, AudFilter_Service_Inst
+
+; -------------- AudFilter driver install sections
+[AudFilter_Service_Inst]
+DisplayName    = %AudFilter.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %13%\AudFilter.sys
+
+[AudFilter_Device.NT.Wdf]
+KmdfService = AudFilter, AudFilter_wdfsect
+
+[AudFilter_wdfsect]
+KmdfLibraryVersion = $KMDFVERSION$
+
+[Strings]
+SPSVCINST_ASSOCSERVICE = 0x00000002
+ManufacturerName = "WoA-Miaoll"
+DiskName = "AudFilter Installation Disk"
+AudFilter.DeviceDesc = "AudFilter Device"
+AudFilter.SVCDESC = "AudFilter Service"

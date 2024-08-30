@@ -11,13 +11,17 @@ typedef struct _SPB_CONTEXT
     WDFWAITLOCK SpbLock;
     WDFREQUEST SpbRequest;
     WDFMEMORY InputMemory;
-} SPB_CONTEXT, * PSPB_CONTEXT;
+} SPB_CONTEXT, *PSPB_CONTEXT;
 
 typedef struct _DEVICE_CONTEXT
 {
     SPB_CONTEXT             SpbContextA;
     SPB_CONTEXT             SpbContextB;
     BOOLEAN                 TwoSpeakers;
+    PCALLBACK_OBJECT        CSAudioAPICallback;
+    PVOID                   CSAudioAPICallbackObj;
+    BOOLEAN                 CSAudioManaged;
+    WDFWAITLOCK             StartLock;
 } DEVICE_CONTEXT, *PDEVICE_CONTEXT;
 
 
