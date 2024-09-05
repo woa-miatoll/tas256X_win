@@ -140,7 +140,7 @@ OnD0Entry(
     WdfWaitLockAcquire(pDevice->StartLock, NULL);
     WA(0x00, 0x00); // Switch page to 0
     WA(0x7f, 0x00); // Set book 0
-    WA(0x01, 0x00); // Reset
+    WA(0x01, 0x01); // Reset
     WA(0x02, 0x00); // Set active mode
     WA(0x03, 0x20); // Set AMP Level to 16dBV
     WA(0x04, 0xcf); // Disable OTE/OCE retry, enable IRQZ pull up
@@ -167,7 +167,7 @@ OnD0Entry(
     if (pDevice->TwoSpeakers) {
         WB(0x00, 0x00); // Switch page to 0
         WB(0x7f, 0x00); // Set book 0
-        WB(0x01, 0x00); // Reset
+        WB(0x01, 0x01); // Reset
         WB(0x02, 0x00); // Set mode to active mode
         WB(0x03, 0x3a); // Set AMP Level to 16dBV
         WB(0x04, 0xcf); // Disable OTE/OCE retry, enable IRQZ pull up
