@@ -75,8 +75,6 @@ AudFilterEvtDriverContextCleanup(
     PAGED_CODE();
 
     TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Entry");
-    if (DriverObject != NULL && DeviceGetContext(DriverObject) != NULL && DeviceGetContext(DriverObject)->CSAudioAPICallbackObj != NULL)
-        ExUnregisterCallback(DeviceGetContext(DriverObject)->CSAudioAPICallbackObj);
     
     WPP_CLEANUP(WdfDriverWdmGetDriverObject((WDFDRIVER)DriverObject));
 }

@@ -23,6 +23,23 @@ VOID ClearTimerStatus(
 }
 
 NTSTATUS
+OnReleaseHardware(
+    _In_  WDFDEVICE     FxDevice,
+    _In_  WDFCMRESLIST  FxResourcesTranslated
+) {
+    UNREFERENCED_PARAMETER(FxResourcesTranslated);
+    PDEVICE_CONTEXT pDevice = DeviceGetContext(FxDevice);
+    NTSTATUS status = STATUS_SUCCESS;
+    TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "%!FUNC! Entering.");
+
+    if (pDevice->CSAudioAPICallbackObj != NULL)
+        ExUnregisterCallback(pDevice->CSAudioAPICallbackObj);
+
+    TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "%!FUNC! Leaving.");
+    return status;
+}
+
+NTSTATUS
 AudFilterCreateDevice(
     _Inout_ PWDFDEVICE_INIT DeviceInit
     )
@@ -39,6 +56,11 @@ AudFilterCreateDevice(
     WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(&deviceAttributes, DEVICE_CONTEXT);
 
     TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Entry");
+
+    WDF_PNPPOWER_EVENT_CALLBACKS pnpCallbacks;
+    WDF_PNPPOWER_EVENT_CALLBACKS_INIT(&pnpCallbacks);
+    pnpCallbacks.EvtDeviceReleaseHardware = OnReleaseHardware;
+    WdfDeviceInitSetPnpPowerEventCallbacks(DeviceInit, &pnpCallbacks);
 
     status = WdfDeviceCreate(&DeviceInit, &deviceAttributes, &device);
 
