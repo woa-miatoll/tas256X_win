@@ -28,12 +28,12 @@ OnReleaseHardware(
     _In_  WDFCMRESLIST  FxResourcesTranslated
 ) {
     UNREFERENCED_PARAMETER(FxResourcesTranslated);
-    PDEVICE_CONTEXT pDevice = DeviceGetContext(FxDevice);
+    UNREFERENCED_PARAMETER(FxDevice);
     NTSTATUS status = STATUS_SUCCESS;
     TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "%!FUNC! Entering.");
 
-    if (pDevice->CSAudioAPICallbackObj != NULL)
-        ExUnregisterCallback(pDevice->CSAudioAPICallbackObj);
+    if (g_pDevice->CSAudioAPICallbackObj != NULL)
+        ExUnregisterCallback(g_pDevice->CSAudioAPICallbackObj);
 
     TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "%!FUNC! Leaving.");
     return status;
