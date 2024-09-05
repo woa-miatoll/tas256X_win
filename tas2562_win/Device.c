@@ -144,26 +144,25 @@ OnD0Entry(
     WA(0x02, 0x00); // Set active mode
     WA(0x03, 0x20); // Set AMP Level to 16dBV
     WA(0x04, 0xcf); // Disable OTE/OCE retry, enable IRQZ pull up
-    WA(0x06, 0x09); // Set sampler rate to 48khz
+    WA(0x06, 0x09); // Set sample rate to 48khz
     WA(0x07, 0x03); // Set rx offset to 1, set rx clock polarity to falling edge
     WA(0x08, 0x28); // Set rx word length to 24bits and rx time slot length to 16bits, set rx time slot select config to mono right channel
     WA(0x0a, 0x11); // Set tx clock polarity to falling edge
-    WA(0x3e, 0x00); // Disable ICN
     WA(0x30, 0x3d); // Enable CLK_HALT_EN, set CLK_HALT_TIMER to 838.86ms
     WA(0x1a, 0xf8); // Enable Limiter mute/infinite hold/max attenuation/active and VBAT masks
     WA(0x1b, 0xb1); // Enable Load Diagnostic Completion and Speaker open load masks
     WA(0x00, 0x01); // Switch page to 1
-    WA(0x21, 0x08); // TODO: Find vbat limiter value
+    WA(0x21, 0x08); // Enable Comparator Hysteresis
     WA(0x00, 0x02); // Switch page to 2
-    WA(0x64, 0x00, 0x01, 0x2f, 0x2c); // TODO: Explain this
-    WA(0x6c, 0x00, 0x01, 0x5d, 0xc0); // TODO: Explain this
+    WA(0x64, 0x00, 0x01, 0x2f, 0x2c); // Set Idle channel detection to -80dB
+    WA(0x6c, 0x00, 0x01, 0x5d, 0xc0); // Set Idle channel detection to -80dB
     WA(0x0c, 0x10); // Default volume
     WA(0x0d, 0x10); // Default volume
     WA(0x0e, 0x10); // Default volume
     WA(0x0f, 0x00); // Default volume
     WA(0x00, 0x00); // Switch page to 0
-    WA(0x0b, 0x46); // Disable VSNS_TX
-    WA(0x0c, 0x44); // Disable ISNS_TX
+    WA(0x0b, 0x46); // Enable VSNS_TX
+    WA(0x0c, 0x44); // Enable ISNS_TX
 
     if (pDevice->TwoSpeakers) {
         WB(0x00, 0x00); // Switch page to 0
@@ -172,26 +171,25 @@ OnD0Entry(
         WB(0x02, 0x00); // Set mode to active mode
         WB(0x03, 0x3a); // Set AMP Level to 16dBV
         WB(0x04, 0xcf); // Disable OTE/OCE retry, enable IRQZ pull up
-        WB(0x06, 0x09); // Set sampler rate to 48khz
+        WB(0x06, 0x09); // Set sample rate to 48khz
         WB(0x07, 0x03); // Set rx offset to 1, set rx clock polarity to falling edge
         WB(0x08, 0x18); // Set rx word length to 24bits and rx time slot length to 16bits, set rx time slot select config to mono left channel
         WB(0x0a, 0xf1); // Set tx clock polarity to falling edge
-        WB(0x3e, 0x00); // Disable ICN
         WB(0x30, 0x3d); // Enable CLK_HALT_EN, set CLK_HALT_TIMER to 838.86ms
         WB(0x1a, 0xf8); // Enable Limiter mute/infinite hold/max attenuation/active and VBAT masks
         WB(0x1b, 0xb1); // Enable Load Diagnostic Completion and Speaker open load masks
         WB(0x00, 0x01); // Switch page to 1
-        WB(0x21, 0x08); // TODO: Find vbat limiter value
+        WB(0x21, 0x08); // Enable Comparator Hysteresis
         WB(0x00, 0x02); // Switch page to 2
-        WB(0x64, 0x00, 0x01, 0x2f, 0x2c); // TODO: Explain this
-        WB(0x6c, 0x00, 0x01, 0x5d, 0xc0); // TODO: Explain this
+        WB(0x64, 0x00, 0x01, 0x2f, 0x2c); // Set Idle channel detection to -80dB
+        WB(0x6c, 0x00, 0x01, 0x5d, 0xc0); // Set Idle channel detection to -80dB
         WB(0x0c, 0x15); // Default volume
         WB(0x0d, 0x15); // Default volume
         WB(0x0e, 0x15); // Default volume
         WB(0x0f, 0x00); // Default volume
         WB(0x00, 0x00); // Switch page to 0
-        WB(0x0b, 0x42); // Disable VSNS_TX
-        WB(0x0c, 0x40); // Disable ISNS_TX
+        WB(0x0b, 0x42); // Enable VSNS_TX
+        WB(0x0c, 0x40); // Enable ISNS_TX
     }
     WdfWaitLockRelease(pDevice->StartLock);
 
