@@ -52,7 +52,7 @@ KmdfLibraryVersion = $KMDFVERSION$
 
 [Strings]
 SPSVCINST_ASSOCSERVICE = 0x00000002
-ManufacturerName = "WoA-Miaoll"
+ManufacturerName = "WoA-Miatoll"
 DiskName = "Ti TAS2562 Installation Disk"
 tas2562_win.DeviceDesc = "Ti TAS2562 Device"
 tas2562_win.SVCDESC = "Ti TAS2562 Service"

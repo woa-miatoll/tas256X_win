@@ -52,7 +52,7 @@ KmdfLibraryVersion = $KMDFVERSION$
 
 [Strings]
 SPSVCINST_ASSOCSERVICE = 0x00000002
-ManufacturerName = "WoA-Miaoll"
+ManufacturerName = "WoA-Miatoll"
 DiskName = "AudFilter Installation Disk"
 AudFilter.DeviceDesc = "AudFilter Device"
 AudFilter.SVCDESC = "AudFilter Service"
