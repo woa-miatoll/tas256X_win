@@ -27,6 +27,16 @@ typedef struct _DEVICE_CONTEXT
 
 WDF_DECLARE_CONTEXT_TYPE_WITH_NAME(DEVICE_CONTEXT, DeviceGetContext)
 
+#define DELAY_ONE_MICROSECOND (-10)
+#define DELAY_ONE_MILLISECOND (DELAY_ONE_MICROSECOND*1000)
+
+#define DELAY_MS(msec)  {                                                   \
+    LARGE_INTEGER interval;                                              \
+    interval.QuadPart = DELAY_ONE_MILLISECOND;                           \
+    interval.QuadPart *= msec;                                           \
+    KeDelayExecutionThread(KernelMode, 0, &interval);                    \
+}
+
 NTSTATUS
 Tas2562CreateDevice(
     _Inout_ PWDFDEVICE_INIT DeviceInit
