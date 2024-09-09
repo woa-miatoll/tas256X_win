@@ -36,6 +36,15 @@
     <ClInclude Include="spb.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="tas256x.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tas2562.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tas2564.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Device.c">

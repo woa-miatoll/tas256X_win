@@ -165,7 +165,7 @@ SpbDeviceWriteRead(
         NULL,
         &bytesRead
     );
-    
+
     WdfWaitLockRelease(SpbContext->SpbLock);
 
     return status;

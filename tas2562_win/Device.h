@@ -11,7 +11,7 @@ typedef struct _SPB_CONTEXT
     WDFWAITLOCK SpbLock;
     WDFREQUEST SpbRequest;
     WDFMEMORY InputMemory;
-} SPB_CONTEXT, *PSPB_CONTEXT;
+} SPB_CONTEXT, * PSPB_CONTEXT;
 
 typedef struct _DEVICE_CONTEXT
 {
@@ -22,7 +22,7 @@ typedef struct _DEVICE_CONTEXT
     PVOID                   CSAudioAPICallbackObj;
     BOOLEAN                 CSAudioManaged;
     WDFWAITLOCK             StartLock;
-} DEVICE_CONTEXT, *PDEVICE_CONTEXT;
+} DEVICE_CONTEXT, * PDEVICE_CONTEXT;
 
 
 WDF_DECLARE_CONTEXT_TYPE_WITH_NAME(DEVICE_CONTEXT, DeviceGetContext)
@@ -40,6 +40,6 @@ WDF_DECLARE_CONTEXT_TYPE_WITH_NAME(DEVICE_CONTEXT, DeviceGetContext)
 NTSTATUS
 Tas2562CreateDevice(
     _Inout_ PWDFDEVICE_INIT DeviceInit
-    );
+);
 
 EXTERN_C_END
