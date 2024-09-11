@@ -12,9 +12,12 @@
 
 UINT8 p_icn_threshold[] = { 0x64, 0x00, 0x01, 0x2f, 0x2c };
 UINT8 p_icn_hysteresis[] = { 0x6c, 0x00, 0x01, 0x5d, 0xc0 };
-UINT8 p_2562_dvc[] = { 0x0c, 0x25, 0x25, 0x00, 0x00 };
+UINT8 p_2562_dvc[] = { 0x0c, 0x30, 0x30, 0x00, 0x00 };
 UINT8 p_2564_dvc[] = { 0x0c, 0x10, 0x10, 0x00, 0x00 };
-UINT8 HPF_reverse_path[] = { 0x70, 0x7F, 0xFF,  0xFF,  0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+UINT8 HPF_reverse_path[] = { 0x70, 
+    0x7F, 0xFF, 0xFF, 0xFF, 
+    0x00, 0x00, 0x00, 0x00, 
+    0x00, 0x00, 0x00, 0x00 };
 
 NTSTATUS tas256x_change_book_page(SPB_CONTEXT* SpbContext, UINT32 book, UINT32 page)
 {
@@ -43,7 +46,7 @@ NTSTATUS tas256x_reg_write(SPB_CONTEXT* SpbContext, UINT32 reg, UINT8 data)
         return status;
     }
 
-    buf[0] = (UINT8)(reg & 0xFF);
+    buf[0] = (UINT8)(reg & 0xFF); // While some registers are UINT32, we still need to provide UINT8 value when writing
     buf[1] = data;
 
     return SpbDeviceWrite(SpbContext, buf, sizeof(buf));
@@ -67,10 +70,13 @@ NTSTATUS tas256x_reg_read(
     UINT8* data
 ) {
     NTSTATUS status;
-
     UINT8 raw_data = 0;
+
+    status = tas256x_change_book_page(SpbContext, TAS256X_BOOK_ID(reg), TAS256X_PAGE_ID(reg));
+
     status = SpbDeviceWriteRead(SpbContext, &reg, &raw_data, sizeof(UCHAR), sizeof(UINT8));
     *data = raw_data;
+    
     return status;
 }
 
@@ -197,28 +203,23 @@ NTSTATUS tas256x_set_power_shutdown(PDEVICE_CONTEXT pDevice)
 }
 
 /*
-*  Return true if TAS is active
-*  Return false if TAS is muted or shut down
+*  Return 0 if TAS is active
+*  Return 1 if TAS is muted
+*  Return 2 if TAS is shut down
 *  Note that we're deviating from downstream driver here.
 */
 NTSTATUS tas256x_power_check(SPB_CONTEXT* SpbContext)
 {
     int n_result = 0;
-    int status = 0;
+    UINT8 status = 0;
 
-    n_result = tas256x_reg_update_bits(SpbContext, 
+    n_result = tas256x_reg_read(SpbContext, 
         TAS256X_POWERCONTROL,
-        TAS256X_POWERCONTROL_OPERATIONALMODE10_MASK,
-        TAS256X_POWERCONTROL_OPERATIONALMODE10_SHUTDOWN);
+        &status);
 
     status &= TAS256X_POWERCONTROL_OPERATIONALMODE10_MASK;
 
-    if ((status != TAS256X_POWERCONTROL_OPERATIONALMODE10_SHUTDOWN)
-        && (status != TAS256X_POWERCONTROL_OPERATIONALMODE10_MUTE))
-        return false;
-    else
-        return true;
-
+    return status;
 }
 
 /*
@@ -490,6 +491,21 @@ NTSTATUS tas256x_rx_set_bitwidth(PDEVICE_CONTEXT pDevice, int bitwidth)
     return n_result;
 }
 
+NTSTATUS tas256x_get_chipid(PDEVICE_CONTEXT pDevice)
+{
+    int result = 0;
+    int data = 0;
+    int data2 = 0;
+
+    result = tas256x_reg_read(&pDevice->SpbContextA,
+        TAS256X_CHIPID, &data);
+    if (pDevice->TwoSpeakers)
+        result = tas256x_reg_read(&pDevice->SpbContextB,
+            TAS256X_CHIPID, &data2);
+
+    return result;
+}
+
 NTSTATUS tas256x_update_rx_cfg(SPB_CONTEXT* SpbContext, int value)
 {
     NTSTATUS n_result = 0;
@@ -531,6 +547,9 @@ NTSTATUS tas256x_software_reset(SPB_CONTEXT* SpbContext)
    return n_result;
 }
 
+/*
+* Downstream driver doesn't have 2562 in this function
+*/
 NTSTATUS tas256x_boost_volt_update(SPB_CONTEXT* SpbContext, int value)
 {
     NTSTATUS n_result = 0;
@@ -709,6 +728,9 @@ NTSTATUS tas256x_set_power_state(PDEVICE_CONTEXT pDevice, int state)
     return n_result;
 }
 
+/*
+* Note that we're deviating from downstream driver here.
+*/
 NTSTATUS tas2564_rx_mode_update(SPB_CONTEXT* SpbContext, int rx_mode)
 {
     NTSTATUS n_result = 0;
@@ -751,6 +773,9 @@ NTSTATUS tas2564_specific(SPB_CONTEXT* SpbContext)
     return n_result;
 }
 
+/*
+* Not present in downstream driver
+*/
 NTSTATUS tas2562_specific(SPB_CONTEXT* SpbContext)
 {
     NTSTATUS n_result;
@@ -845,6 +870,9 @@ NTSTATUS tas256x_set_bitwidth_slotwidth(PDEVICE_CONTEXT pDevice, int bitwidth, i
     return status;
 }
 
+/*
+* Note that we're deviating from downstream driver here.
+*/
 NTSTATUS tas256x_load_init(PDEVICE_CONTEXT pDevice)
 {
     NTSTATUS status = 0;
@@ -1050,6 +1078,8 @@ CsAudioCallbackFunction(
     RtlZeroMemory(&localArg, sizeof(CsAudioArg));
     RtlCopyMemory(&localArg, arg, min(arg->argSz, sizeof(CsAudioArg)));
 
+    TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "endpointType = %d", localArg.endpointType);
+
     if (localArg.endpointType == CSAudioEndpointTypeDSP && localArg.endpointRequest == CSAudioEndpointRegister) {
         CSAudioRegisterEndpoint(pDevice);
     }
@@ -1058,10 +1088,16 @@ CsAudioCallbackFunction(
     }
 
     if (localArg.endpointRequest == CSAudioEndpointStop) {
-        tas256x_set_power_state(pDevice, 2);
+        tas256x_set_power_state(pDevice, 1);
     }
-    if (localArg.endpointRequest == CSAudioEndpointStart && !(tas256x_power_check(&pDevice->SpbContextA) || tas256x_power_check(&pDevice->SpbContextB))) {
-        tas256x_load_config(pDevice);
+
+    if (localArg.endpointRequest == CSAudioEndpointStart) {
+        if (tas256x_power_check(&pDevice->SpbContextA) || tas256x_power_check(&pDevice->SpbContextB) == 1)
+            TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "TAS UNMUTE");
+            tas256x_set_power_state(pDevice, 0);
+        if (tas256x_power_check(&pDevice->SpbContextA) || tas256x_power_check(&pDevice->SpbContextB) == 2)
+            TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "TAS RELOAD");
+            tas256x_load_config(pDevice);
     }
     TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "%!FUNC! Leaving.");
     return;
