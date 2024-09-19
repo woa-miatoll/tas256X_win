@@ -424,121 +424,49 @@
 
 #define RESTART_MAX 3
 
-struct tas256x_priv;
+#define tas2562_dvc_pcm 55
+#define tas2562_lim_max_attn 7
+#define tas2562_lim_thr_max 13
+#define tas2562_lim_thr_min 3
+#define tas2562_lim_infl_pt 13
+#define tas2562_lim_trk_slp 0
+#define tas2562_bop_thd 4
+#define tas2562_bosd_thd 2
+#define tas2562_bst_vltg 0xA
+#define tas2562_bst_ilm 0x36
+#define tas2562_lim_switch 0
+#define tas2562_lim_att_rate 1
+#define tas2562_lim_att_stp_size 1
+#define tas2562_lim_rel_rate 6
+#define tas2562_lim_rel_stp_size 1
+#define tas2562_bop_enable 1
+#define tas2562_bop_mute 0
+#define tas2562_bosd_enable 0
+#define tas2562_bop_att_rate 1
+#define tas2562_bop_att_stp_size 1
+#define tas2562_bop_hld_time 6
+#define tas2562_vbat_lpf 2
 
-struct tas256x_register {
-	int book;
-	int page;
-	int reg;
-};
-
-struct tas256x_dai_cfg {
-	unsigned int dai_fmt;
-	unsigned int tdm_delay;
-};
-
-/*struct tas256x_buf_cfg {
-	unsigned short bufSize;
-	unsigned char *buf;
-};*/
-
-enum channel {
-	channel_left = 0x01,
-	channel_right = 0x02,
-	channel_both = channel_left | channel_right
-};
-
-
-struct tas_device {
-	int mChipID;
-	int mn_current_book;
-	int mn_current_page;
-	int mn_addr;
-	int mn_reset_gpio;
-	int mn_irq_gpio;
-	int mn_irq;
-	int spk_control;
-	int device_id;
-	int rx_mode;
-	int dvc_pcm;
-	int bst_vltg;
-	int bst_ilm;
-	int lim_switch;
-	int lim_max_attn;
-	int lim_thr_max;
-	int lim_thr_min;
-	int lim_att_rate;
-	int lim_rel_rate;
-	int lim_att_stp_size;
-	int lim_rel_stp_size;
-	int lim_max_thd;
-	int lim_min_thd;
-	int lim_infl_pt;
-	int lim_trk_slp;
-	int bop_enable;
-	int bop_thd;
-	int bop_att_rate;
-	int bop_att_stp_size;
-	int bop_hld_time;
-	int bop_mute;
-	int bosd_enable;
-	int bosd_thd;
-	int vbat_lpf;
-	int rx_cfg;
-	struct i2c_client* i2c;
-	struct regmap* regmap;
-};
-
-struct tas256x_priv {
-	bool mb_power_up;
-	int mn_power_state;
-	int mn_asi_format;
-	bool mb_irq_eable;
-	int mn_sampling_rate;
-	int mn_frame_size;
-	int mn_ppg;
-	int mn_ch_size;
-	int mn_slot_width;
-	int mn_pcm_format;
-	int mn_iv_width;
-	int mn_vbat;
-	bool mb_mute;
-	bool dac_mute;
-	bool i2c_suspend;
-	int mn_channels;
-	struct tas_device** devs;
-	int icn_sw;
-	int (*read)(struct tas256x_priv* p_tas256x, enum channel chn, unsigned int reg, unsigned int* pValue);
-	int (*write)(struct tas256x_priv* p_tas256x, enum channel chn, unsigned int reg, unsigned int Value);
-	int (*bulk_read)(struct tas256x_priv* p_tas256x, enum channel chn, unsigned int reg, unsigned char* p_data, unsigned int len);
-	int (*bulk_write)(struct tas256x_priv* p_tas256x, enum channel chn, unsigned int reg, unsigned char* p_data, unsigned int len);
-	int (*update_bits)(struct tas256x_priv* p_tas256x, enum channel chn, unsigned int reg, unsigned int mask, unsigned int value);
-	void (*hw_reset)(struct tas256x_priv* p_tas256x);
-	void (*clear_irq)(struct tas256x_priv* p_tas256x);
-	void (*enable_irq)(struct tas256x_priv* p_tas256x, bool enable);
-	/* device is working, but system is suspended */
-	int (*runtime_suspend)(struct tas256x_priv* p_tas256x);
-	int (*runtime_resume)(struct tas256x_priv* p_tas256x);
-	bool mb_runtime_suspend;
-
-	unsigned int mn_err_code;
-	unsigned int mnRestart;
-#ifdef CONFIG_TAS256X_CODEC
-	struct mutex codec_lock;
-#endif
-
-#ifdef CONFIG_TAS256X_MISC
-	int mn_dbg_cmd;
-	int mn_current_reg;
-	//struct tas256x_buf_cfg misc_buf;
-	struct mutex file_lock;
-#endif
-
-	int iv_enable;
-#ifdef CONFIG_TAS256X_BIN_PARSER
-	int fw_state;
-	struct tas256x_fw_hdr fw_hdr;
-	int ncfgs;
-	struct tas256x_config_info** cfg_info;
-#endif
-};
+#define tas2564_rx_mode 0
+#define tas2564_dvc_pcm 55
+#define tas2564_lim_max_attn 7
+#define tas2564_lim_thr_max 13
+#define tas2564_lim_thr_min 3
+#define tas2564_lim_infl_pt 13
+#define tas2564_lim_trk_slp 0
+#define tas2564_bop_thd 4
+#define tas2564_bosd_thd 2
+#define tas2564_bst_vltg 13
+#define tas2564_bst_ilm 0x39
+#define tas2564_lim_switch 0
+#define tas2564_lim_att_rate 1
+#define tas2564_lim_att_stp_size 1
+#define tas2564_lim_rel_rate 6
+#define tas2564_lim_rel_stp_size 1
+#define tas2564_bop_enable 1
+#define tas2564_bop_mute 0
+#define tas2564_bosd_enable 0
+#define tas2564_bop_att_rate 1
+#define tas2564_bop_att_stp_size 1
+#define tas2564_bop_hld_time 6
+#define tas2564_vbat_lpf 2
