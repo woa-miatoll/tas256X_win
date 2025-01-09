@@ -16,7 +16,9 @@ typedef struct _SPB_CONTEXT
 typedef struct _DEVICE_CONTEXT
 {
     SPB_CONTEXT             SpbContextA;
+    INT                     SpbContextA_ID;
     SPB_CONTEXT             SpbContextB;
+    INT                     SpbContextB_ID;
     BOOLEAN                 TwoSpeakers;
     PCALLBACK_OBJECT        CSAudioAPICallback;
     PVOID                   CSAudioAPICallbackObj;
