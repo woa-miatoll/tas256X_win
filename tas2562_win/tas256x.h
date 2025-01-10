@@ -424,49 +424,37 @@
 
 #define RESTART_MAX 3
 
-#define tas2562_dvc_pcm 55
-#define tas2562_lim_max_attn 7
-#define tas2562_lim_thr_max 13
-#define tas2562_lim_thr_min 3
-#define tas2562_lim_infl_pt 13
-#define tas2562_lim_trk_slp 0
-#define tas2562_bop_thd 4
-#define tas2562_bosd_thd 2
+#define tas256x_dvc_pcm 55
+#define tas256x_lim_max_attn 7
+#define tas256x_lim_thr_max 13
+#define tas256x_lim_thr_min 3
+#define tas256x_lim_infl_pt 13
+#define tas256x_lim_trk_slp 0
+#define tas256x_bop_thd 4
+#define tas256x_bosd_thd 2
+#define tas256x_lim_switch 0
+#define tas256x_lim_att_rate 1
+#define tas256x_lim_att_stp_size 1
+#define tas256x_lim_rel_rate 6
+#define tas256x_lim_rel_stp_size 1
+
+#define tas256x_vbat_lpf 2
+
 #define tas2562_bst_vltg 0xA
 #define tas2562_bst_ilm 0x36
-#define tas2562_lim_switch 0
-#define tas2562_lim_att_rate 1
-#define tas2562_lim_att_stp_size 1
-#define tas2562_lim_rel_rate 6
-#define tas2562_lim_rel_stp_size 1
 #define tas2562_bop_enable 1
 #define tas2562_bop_mute 0
 #define tas2562_bosd_enable 0
 #define tas2562_bop_att_rate 1
 #define tas2562_bop_att_stp_size 1
 #define tas2562_bop_hld_time 6
-#define tas2562_vbat_lpf 2
 
 #define tas2564_rx_mode 0
-#define tas2564_dvc_pcm 55
-#define tas2564_lim_max_attn 7
-#define tas2564_lim_thr_max 13
-#define tas2564_lim_thr_min 3
-#define tas2564_lim_infl_pt 13
-#define tas2564_lim_trk_slp 0
-#define tas2564_bop_thd 4
-#define tas2564_bosd_thd 2
 #define tas2564_bst_vltg 13
 #define tas2564_bst_ilm 0x39
-#define tas2564_lim_switch 0
-#define tas2564_lim_att_rate 1
-#define tas2564_lim_att_stp_size 1
-#define tas2564_lim_rel_rate 6
-#define tas2564_lim_rel_stp_size 1
 #define tas2564_bop_enable 1
 #define tas2564_bop_mute 0
 #define tas2564_bosd_enable 0
 #define tas2564_bop_att_rate 1
 #define tas2564_bop_att_stp_size 1
 #define tas2564_bop_hld_time 6
-#define tas2564_vbat_lpf 2

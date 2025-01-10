@@ -14,10 +14,20 @@
  UINT8 p_icn_hysteresis[] = { 0x6c, 0x00, 0x01, 0x5d, 0xc0 };
  UINT8 p_2562_dvc[] = { 0x0c, 0x10, 0x10, 0x00, 0x00 };
  UINT8 p_2564_dvc[] = { 0x0c, 0x10, 0x10, 0x00, 0x00 };
+
  UINT8 HPF_reverse_path[] = { 0x70, 
     0x7F, 0xFF, 0xFF, 0xFF, 
     0x00, 0x00, 0x00, 0x00, 
     0x00, 0x00, 0x00, 0x00 };
+
+ UINT8 bsd_thd[16][4] = {
+    {0x28, 0x00, 0x00, 0x00}, {0x29, 0x99, 0x99, 0x99}, {0x2B, 0x33, 0x33, 0x33},
+    {0x2C, 0xCC, 0xCC, 0xCC}, {0x2E, 0x66, 0x66, 0x66}, {0x30, 0x00, 0x00, 0x00},
+    {0x31, 0x99, 0x99, 0x99}, {0x33, 0x33, 0x33, 0x33}, {0x34, 0xCC, 0xCC, 0xCC},
+    {0x36, 0x66, 0x66, 0x66}, {0x38, 0x00, 0x00, 0x00}, {0x39, 0x99, 0x99, 0x99},
+    {0x3B, 0x33, 0x33, 0x33}, {0x3C, 0xCC, 0xCC, 0xCC}, {0x3E, 0x66, 0x66, 0x66},
+    {0x40, 0x00, 0x00, 0x00}
+ };
 
  UINT8 dvc_pcm[57][5] = {
     {0x0c, 0x00, 0x00, 0x0D, 0x43}, {0x0c, 0x00, 0x00, 0x10, 0xB3}, {0x0c, 0x00, 0x00, 0x15, 0x05},
@@ -496,8 +506,7 @@ NTSTATUS tas256x_rx_set_bitwidth(PDEVICE_CONTEXT pDevice, int bitwidth)
 NTSTATUS tas256x_update_bop_thr(PDEVICE_CONTEXT pDevice)
 {
     NTSTATUS n_result = -1;
-    UINT8 data = tas2562_bop_thd;
-    UINT8 data2 = tas2564_bop_thd;
+    UINT8 data = tas256x_bop_thd;
 
     n_result = tas256x_reg_bulk_write(&pDevice->SpbContextA,
         TAS256X_BOP_TH,
@@ -506,8 +515,8 @@ NTSTATUS tas256x_update_bop_thr(PDEVICE_CONTEXT pDevice)
     if (pDevice->TwoSpeakers)
         n_result = tas256x_reg_bulk_write(&pDevice->SpbContextB,
             TAS256X_BOP_TH,
-            &bop_thd[data2][0],
-            sizeof(bop_thd[data2][0]));
+            &bop_thd[data][0],
+            sizeof(bop_thd[data][0]));
     return n_result;
 }
 
@@ -663,6 +672,114 @@ NTSTATUS tas256x_software_reset(SPB_CONTEXT* SpbContext)
    return n_result;
 }
 
+NTSTATUS tas256x_update_boost_voltage(SPB_CONTEXT* SpbContext, int value)
+{
+    NTSTATUS n_result = 0;
+
+    if (value == 2564)
+        n_result = tas256x_reg_update_bits(SpbContext,
+            TAS2564_BOOSTCONFIGURATION2,
+            TAS2564_BOOSTCONFIGURATION2_BOOSTMAXVOLTAGE_MASK,
+            (tas2564_bst_vltg+1) << TAS2562_BOOSTCONFIGURATION2_BOOSTMAXVOLTAGE_SHIFT);
+    if (value == 2562)
+        n_result = tas256x_reg_update_bits(SpbContext,
+            TAS2562_BOOSTCONFIGURATION2,
+            TAS2562_BOOSTCONFIGURATION2_BOOSTMAXVOLTAGE_MASK,
+            tas2562_bst_vltg << TAS2562_BOOSTCONFIGURATION2_BOOSTMAXVOLTAGE_SHIFT);
+
+    return n_result;
+}
+
+NTSTATUS tas256x_update_current_limit(SPB_CONTEXT* SpbContext, int value)
+{
+    NTSTATUS n_result = 0;
+
+    if (value == 2564)
+        n_result = tas256x_reg_update_bits(SpbContext,
+            TAS256X_BOOSTCONFIGURATION4,
+            TAS256X_BOOSTCONFIGURATION4_BOOSTCURRENTLIMIT_MASK,
+            tas2564_bst_ilm << TAS256X_BOOSTCONFIGURATION4_BOOSTCURRENTLIMIT_SHIFT);
+    if (value == 2562)
+        n_result = tas256x_reg_update_bits(SpbContext,
+            TAS256X_BOOSTCONFIGURATION4,
+            TAS256X_BOOSTCONFIGURATION4_BOOSTCURRENTLIMIT_MASK,
+            tas2562_bst_ilm << TAS256X_BOOSTCONFIGURATION4_BOOSTCURRENTLIMIT_SHIFT);
+
+    return n_result;
+}
+
+NTSTATUS tas256x_update_limiter_attack_rate(SPB_CONTEXT* SpbContext)
+{
+    NTSTATUS n_result = 0;
+
+    n_result = tas256x_reg_update_bits(SpbContext,
+            TAS256X_LIMITERCONFIGURATION0,
+            TAS256X_LIMITER_ATTACKRATE_MASK,
+            tas256x_lim_att_rate << TAS256X_LIMITER_ATTACKRATE_SHIFT);
+
+    return n_result;
+}
+
+NTSTATUS tas256x_update_limiter_enable(SPB_CONTEXT* SpbContext)
+{
+    NTSTATUS n_result = 0;
+
+    n_result = tas256x_reg_update_bits(SpbContext,
+            TAS256X_LIMITERCONFIGURATION0,
+            TAS256X_LIMITER_ENABLE_MASK,
+            tas256x_lim_switch << TAS256X_LIMITER_ENABLE_SHIFT);
+
+    return n_result;
+}
+
+NTSTATUS tas256x_update_limiter_attack_step_size(SPB_CONTEXT* SpbContext)
+{
+    NTSTATUS n_result = 0;
+
+    n_result = tas256x_reg_update_bits(SpbContext,
+            TAS256X_LIMITERCONFIGURATION0,
+            TAS256X_LIMITER_ATTACKSTEPSIZE_MASK,
+            tas256x_lim_att_stp_size << TAS256X_LIMITER_ATTACKSTEPSIZE_SHIFT);
+
+    return n_result;
+}
+
+NTSTATUS tas256x_update_vbat_lpf(SPB_CONTEXT* SpbContext)
+{
+    NTSTATUS n_result = 0;
+
+    n_result = tas256x_reg_update_bits(SpbContext,
+        TAS256X_VBATFILTER,
+        TAS256X_VBAT_LPF_MASK,
+        tas256x_vbat_lpf << TAS256X_VBAT_LPF_SHIFT);
+
+    return n_result;
+}
+
+NTSTATUS tas256x_update_limiter_release_rate(SPB_CONTEXT* SpbContext)
+{
+    NTSTATUS n_result = 0;
+
+    n_result = tas256x_reg_update_bits(SpbContext,
+        TAS256X_LIMITERCONFIGURATION1,
+        TAS256X_LIMITER_RELEASERATE_MASK,
+        tas256x_lim_rel_rate << TAS256X_LIMITER_RELEASERATE_SHIFT);
+
+    return n_result;
+}
+
+NTSTATUS tas256x_update_limiter_release_step_size(SPB_CONTEXT* SpbContext)
+{
+    NTSTATUS n_result = 0;
+
+    n_result = tas256x_reg_update_bits(SpbContext,
+        TAS256X_LIMITERCONFIGURATION1,
+        TAS256X_LIMITER_RELEASESTEPSIZE_MASK,
+        tas256x_lim_rel_stp_size << TAS256X_LIMITER_RELEASESTEPSIZE_SHIFT);
+
+    return n_result;
+}
+
 /*
 * Downstream driver doesn't have 2562 in this function
 */
@@ -807,10 +924,10 @@ NTSTATUS tas256x_update_playback_volume(SPB_CONTEXT* SpbContext, int value)
 
     switch (value) {
     case 2562:
-        status = tas256x_reg_bulk_write(SpbContext, TAS256X_DVC_PCM, p_2562_dvc, sizeof(p_2562_dvc));
+        status = tas256x_reg_bulk_write(SpbContext, TAS256X_DVC_PCM, &dvc_pcm[tas256x_dvc_pcm][0], sizeof(tas256x_dvc_pcm));
         break;
     case 2564:
-        status = tas256x_reg_bulk_write(SpbContext, TAS256X_DVC_PCM, p_2564_dvc, sizeof(p_2564_dvc));
+        status = tas256x_reg_bulk_write(SpbContext, TAS256X_DVC_PCM, &dvc_pcm[tas256x_dvc_pcm][0], sizeof(tas256x_dvc_pcm));
         break;
     }
 
@@ -929,6 +1046,20 @@ NTSTATUS tas256x_icn_config(PDEVICE_CONTEXT pDevice) {
 
     return status;
 }
+
+NTSTATUS tas256x_update_bosd_thr(SPB_CONTEXT* SpbContext)
+{
+    NTSTATUS status = 0;
+    UINT8 data = tas256x_bosd_thd;
+
+    status = tas256x_reg_bulk_write(SpbContext,
+        TAS256X_BOSD_TH, 
+        &bsd_thd[data][0],
+        sizeof(data));
+
+    return status;
+}
+
 NTSTATUS tas256x_load_ctrl_values(PDEVICE_CONTEXT pDevice)
 {
     NTSTATUS status = 0;
@@ -936,7 +1067,45 @@ NTSTATUS tas256x_load_ctrl_values(PDEVICE_CONTEXT pDevice)
     status = tas256x_update_playback_volume(&pDevice->SpbContextA, 2562);
     if (pDevice->TwoSpeakers)
         status = tas256x_update_playback_volume(&pDevice->SpbContextB, 2564);
+
     status = tas256x_update_bop_thr(pDevice);
+
+    status = tas256x_update_bosd_thr(&pDevice->SpbContextA);
+    if (pDevice->TwoSpeakers)
+        status = tas256x_update_bosd_thr(&pDevice->SpbContextB);
+    
+    status = tas256x_update_boost_voltage(&pDevice->SpbContextA, 2562);
+    if (pDevice->TwoSpeakers)
+        status = tas256x_update_boost_voltage(&pDevice->SpbContextB, 2564);
+
+    status = tas256x_update_current_limit(&pDevice->SpbContextA, 2562);
+    if (pDevice->TwoSpeakers)
+        status = tas256x_update_current_limit(&pDevice->SpbContextB, 2564);
+
+    status = tas256x_update_limiter_enable(&pDevice->SpbContextA);
+    if (pDevice->TwoSpeakers)
+        status = tas256x_update_limiter_enable(&pDevice->SpbContextB);
+
+    status = tas256x_update_limiter_attack_rate(&pDevice->SpbContextA);
+    if (pDevice->TwoSpeakers)
+        status = tas256x_update_limiter_attack_rate(&pDevice->SpbContextB);
+
+    status = tas256x_update_limiter_attack_step_size(&pDevice->SpbContextA);
+    if (pDevice->TwoSpeakers)
+        status = tas256x_update_limiter_attack_step_size(&pDevice->SpbContextB);
+
+    status = tas256x_update_limiter_release_rate(&pDevice->SpbContextA);
+    if (pDevice->TwoSpeakers)
+        status = tas256x_update_limiter_release_rate(&pDevice->SpbContextB);
+
+    status = tas256x_update_limiter_release_step_size(&pDevice->SpbContextA);
+    if (pDevice->TwoSpeakers)
+        status = tas256x_update_limiter_release_step_size(&pDevice->SpbContextB);
+
+    status = tas256x_update_vbat_lpf(&pDevice->SpbContextA);
+    if (pDevice->TwoSpeakers)
+        status = tas256x_update_vbat_lpf(&pDevice->SpbContextB);
+
     status = tas256x_update_bop_enable(pDevice);
     status = tas256x_update_bop_mute(pDevice);
     status = tas256x_update_bop_shutdown_enable(pDevice);
