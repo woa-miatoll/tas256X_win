@@ -1223,21 +1223,21 @@ CsAudioCallbackFunction(
 
     if (localArg.endpointRequest == CSAudioEndpointStart) {
         if (tas256x_power_check(&pDevice->SpbContextA) == 1)
-            muted == true;
+            muted = true;
         if (tas256x_power_check(&pDevice->SpbContextA) == 2)
-            unloaded == true;
+            unloaded = true;
         if (pDevice->TwoSpeakers) {
             if (tas256x_power_check(&pDevice->SpbContextB) == 1)
-                muted == true;
+                muted = true;
             if (tas256x_power_check(&pDevice->SpbContextB) == 2)
-                unloaded == true;
+                unloaded = true;
         }
     }
     if (unloaded) {
         TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "TAS RELOAD");
         tas256x_load_config(pDevice);
     }
-    if (muted) {
+    else if (muted) {
         TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "TAS UNMUTE");
         tas256x_set_power_state(pDevice, 0);
     }
