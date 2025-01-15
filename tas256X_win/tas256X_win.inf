@@ -52,7 +52,7 @@ KmdfLibraryVersion = $KMDFVERSION$
 
 [Strings]
 SPSVCINST_ASSOCSERVICE = 0x00000002
-ManufacturerName = "WoA-Miatoll"
+ManufacturerName = "Nikroks & Remtrik"
 DiskName = "Texas Instruments TAS256X Audio Amplifier Installation Disk"
 tas256X_win.DeviceDesc = "Ti TAS256X Audio Amplifier Device"
 tas256X_win.SVCDESC = "Ti TAS256X Service"
