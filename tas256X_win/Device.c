@@ -227,7 +227,7 @@ NTSTATUS tas256x_set_power_shutdown(PDEVICE_CONTEXT pDevice)
         TAS256X_POWERCONTROL_OPERATIONALMODE10_MASK,
         TAS256X_POWERCONTROL_OPERATIONALMODE10_SHUTDOWN);
 
-    if (pDevice->TwoSpeakers)
+    if (pDevice->TwoSpeakers) {
         n_result = tas256x_reg_update_bits(&pDevice->SpbContextB,
             TAS256X_MISC_CLASSD,
             TAS256X_CMP_HYST_MASK,
@@ -235,6 +235,7 @@ NTSTATUS tas256x_set_power_shutdown(PDEVICE_CONTEXT pDevice)
         n_result = tas256x_reg_update_bits(&pDevice->SpbContextB, TAS256X_POWERCONTROL,
             TAS256X_POWERCONTROL_OPERATIONALMODE10_MASK,
             TAS256X_POWERCONTROL_OPERATIONALMODE10_SHUTDOWN);
+    }
 
     /*Device Shutdown need 20ms after shutdown writes are made*/
     DELAY_MS(20);
@@ -426,7 +427,7 @@ NTSTATUS tas256x_rx_set_fmt(PDEVICE_CONTEXT pDevice, unsigned int rx_edge, UINT8
         (rx_start_slot <<
             TAS256X_TDMCONFIGURATIONREG1_RXOFFSET51_SHIFT));
     
-    if (pDevice->TwoSpeakers)
+    if (pDevice->TwoSpeakers) {
         tas256x_reg_update_bits(&pDevice->SpbContextB,
             TAS256X_TDMCONFIGURATIONREG1,
             TAS256X_TDMCONFIGURATIONREG1_RXEDGE_MASK,
@@ -437,7 +438,7 @@ NTSTATUS tas256x_rx_set_fmt(PDEVICE_CONTEXT pDevice, unsigned int rx_edge, UINT8
             TAS256X_TDMCONFIGURATIONREG1_RXOFFSET51_MASK,
             (rx_start_slot <<
                 TAS256X_TDMCONFIGURATIONREG1_RXOFFSET51_SHIFT));
-
+    }
 
     return n_result;
 }
