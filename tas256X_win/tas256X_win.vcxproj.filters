@@ -19,7 +19,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <Inf Include="tas2562_win.inf">
+    <Inf Include="tas256X_win.inf">
       <Filter>Driver Files</Filter>
     </Inf>
   </ItemGroup>

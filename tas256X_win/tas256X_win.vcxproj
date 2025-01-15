@@ -33,7 +33,7 @@
     <ClInclude Include="Trace.h" />
   </ItemGroup>
   <ItemGroup>
-    <Inf Include="tas2562_win.inf" />
+    <Inf Include="tas256X_win.inf" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{011B73B2-15AE-40A9-B83F-3E77ADA59E29}</ProjectGuid>
@@ -42,7 +42,7 @@
     <MinimumVisualStudioVersion>12.0</MinimumVisualStudioVersion>
     <Configuration>Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">x64</Platform>
-    <RootNamespace>tas2562_win</RootNamespace>
+    <RootNamespace>tas256X_win</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">

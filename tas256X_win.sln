@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34622.214
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tas2562_win", "tas2562_win\tas2562_win.vcxproj", "{011B73B2-15AE-40A9-B83F-3E77ADA59E29}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tas256X_win", "tas256X_win\tas256X_win.vcxproj", "{011B73B2-15AE-40A9-B83F-3E77ADA59E29}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AudFilter", "AudFilter\AudFilter.vcxproj", "{C6E0BF0E-F8DA-4CEF-860C-B1CC209BD7A1}"
 EndProject
