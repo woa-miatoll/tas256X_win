@@ -248,7 +248,7 @@ NTSTATUS tas256x_set_power_shutdown(PDEVICE_CONTEXT pDevice)
 *  Return 2 if TAS is shut down
 *  Note that we're deviating from downstream driver here.
 */
-NTSTATUS tas256x_power_check(SPB_CONTEXT* SpbContext)
+UINT8 tas256x_power_check(SPB_CONTEXT* SpbContext)
 {
     int n_result = 0;
     UINT8 status = 0;
@@ -617,17 +617,15 @@ NTSTATUS tas256x_update_bop_hold_time(PDEVICE_CONTEXT pDevice)
     return n_result;
 }
 
-NTSTATUS tas256x_get_chipid(PDEVICE_CONTEXT pDevice)
+int tas256x_get_chipid(PDEVICE_CONTEXT pDevice)
 {
     int result = 0;
-    UINT8 data = 0;
-    UINT8 data2 = 0;
 
     result = tas256x_reg_read(&pDevice->SpbContextA,
-        TAS256X_CHIPID, &data);
+        TAS256X_CHIPID, &pDevice->SpbContextA_ID);
     if (pDevice->TwoSpeakers)
         result = tas256x_reg_read(&pDevice->SpbContextB,
-            TAS256X_CHIPID, &data2);
+            TAS256X_CHIPID, &pDevice->SpbContextB_ID);
 
     return result;
 }
