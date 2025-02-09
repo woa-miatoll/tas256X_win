@@ -20,6 +20,13 @@ AudFilterCreateDevice(
 VOID
 EvtIoStop(
     WDFQUEUE Queue,
+    WDFREQUEST Request,
+    ULONG ActionFlags
+);
+
+VOID
+EvtIoResume(
+    WDFQUEUE Queue,
     WDFREQUEST Request
 );
 

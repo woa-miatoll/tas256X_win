@@ -102,7 +102,8 @@ AudFilterCreateDevice(
         WdfIoQueueDispatchParallel);
 
     queueConfig.EvtIoDeviceControl = OnDeviceControl;
-    queueConfig.EvtIoResume = EvtIoStop;
+    queueConfig.EvtIoStop = EvtIoStop;
+    queueConfig.EvtIoResume = EvtIoResume;;
 
     status = WdfIoQueueCreate(
         device,
@@ -195,20 +196,17 @@ OnDeviceControl(
     Irp = WdfRequestWdmGetIrp(Request);
     IrpSp = IoGetCurrentIrpStackLocation(Irp);
 
-    switch (IoControlCode) {
-    case 0x2f0003:
-        if (InputBufferLength == 0x18)
-            if (*(UINT64*)IrpSp->Parameters.DeviceIoControl.Type3InputBuffer == 0x11cfac9b1d58c920) {
-                CheckAmpStatus = TRUE;
-                TraceEvents(
-                    TRACE_LEVEL_INFORMATION,
-                    TRACE_DEVICE,
-                    "Audio state change.");
-            }
-        break;
-    default:
-        CheckAmpStatus = FALSE;
+    if (IoControlCode == 0x2f0003
+        && InputBufferLength == 0x18
+        && (*(UINT64*)IrpSp->Parameters.DeviceIoControl.Type3InputBuffer == 0x11cfac9b1d58c920))
+    {
+        CheckAmpStatus = TRUE;
+        TraceEvents(
+            TRACE_LEVEL_INFORMATION,
+            TRACE_DEVICE,
+            "Audio state change.");
     }
+
     //
     // Forward the request down. WdfDeviceGetIoTarget returns
     // the default target, which represents the device attached to us below in
@@ -218,7 +216,7 @@ OnDeviceControl(
         // Signal Callback func in TAS driver.
         CSAudioNotifyEndpoint(CSAudioEndpointStart);
         g_pDevice->TIMER_STATUS = TRUE;
-        status = WdfTimerStart(g_pDevice->Timer, WDF_REL_TIMEOUT_IN_SEC(5));
+        status = WdfTimerStart(g_pDevice->Timer, WDF_REL_TIMEOUT_IN_SEC(8));
         TraceEvents(
             TRACE_LEVEL_INFORMATION,
             TRACE_DEVICE,
@@ -254,6 +252,70 @@ OnDeviceControl(
 VOID
 EvtIoStop(
     WDFQUEUE Queue,
+    WDFREQUEST Request,
+    ULONG ActionFlags
+)
+{
+    NTSTATUS status;
+    WDFDEVICE device;
+    //BOOLEAN forwardWithCompletionRoutine = FALSE;
+    BOOLEAN requestSent = TRUE;
+    WDF_REQUEST_SEND_OPTIONS options;
+    //WDFMEMORY memory;
+    WDFIOTARGET Target;
+
+    UNREFERENCED_PARAMETER(ActionFlags);
+
+    PAGED_CODE();
+
+    device = WdfIoQueueGetDevice(Queue);
+    Target = WdfDeviceGetIoTarget(device);
+
+    //
+    // Please note that HIDCLASS provides the buffer in the Irp->UserBuffer
+    // field irrespective of the ioctl buffer type. However, framework is very
+    // strict about type checking. You cannot get Irp->UserBuffer by using
+    // WdfRequestRetrieveOutputMemory if the ioctl is not a METHOD_NEITHER
+    // internal ioctl. So depending on the ioctl code, we will either
+    // use retreive function or escape to WDM to get the UserBuffer.
+    //
+
+    TraceEvents(
+        TRACE_LEVEL_ERROR,
+        TRACE_DEVICE,
+        "EvtWdfIoQueueIoStop Enter");
+
+    // Mute Device Here.
+    CSAudioNotifyEndpoint(CSAudioEndpointStop);
+
+    //
+    // We are not interested in post processing the IRP so
+    // fire and forget.
+    //
+    WDF_REQUEST_SEND_OPTIONS_INIT(
+        &options,
+        WDF_REQUEST_SEND_OPTION_SEND_AND_FORGET);
+
+    requestSent = WdfRequestSend(Request, Target, &options);
+
+    if (requestSent == FALSE) {
+        status = WdfRequestGetStatus(Request);
+
+        TraceEvents(
+            TRACE_LEVEL_ERROR,
+            TRACE_DEVICE,
+            "WdfRequestSend failed: 0x%x\n",
+            status);
+
+        WdfRequestComplete(Request, status);
+    }
+
+    return;
+}
+
+VOID
+EvtIoResume(
+    WDFQUEUE Queue,
     WDFREQUEST Request
 )
 {
@@ -284,10 +346,10 @@ EvtIoStop(
     TraceEvents(
         TRACE_LEVEL_ERROR,
         TRACE_DEVICE,
-        "EvtWdfIoQueueIoStop Enter");
+        "EvtWdfIoQueueIoResume Enter");
 
-    //   Mute Device Here.
-    CSAudioNotifyEndpoint(CSAudioEndpointStop);
+    // Start Device Here.
+    CSAudioNotifyEndpoint(CSAudioEndpointStart);
 
     //
     // We are not interested in post processing the IRP so
