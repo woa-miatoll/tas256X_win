@@ -458,3 +458,10 @@
 #define tas2564_bop_att_rate 1
 #define tas2564_bop_att_stp_size 1
 #define tas2564_bop_hld_time 6
+
+typedef enum
+{
+	TAS2562_CHIP1 = 0x10,
+	TAS2562_CHIP2 = 0x20,
+	TAS2564_CHIP = 0x00,
+}TAS256X_CHIP;

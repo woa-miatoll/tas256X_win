@@ -671,38 +671,48 @@ NTSTATUS tas256x_software_reset(SPB_CONTEXT* SpbContext)
    return n_result;
 }
 
-NTSTATUS tas256x_update_boost_voltage(SPB_CONTEXT* SpbContext, int value)
+NTSTATUS tas256x_update_boost_voltage(SPB_CONTEXT* SpbContext, UINT8 SpbContextID)
 {
     NTSTATUS n_result = 0;
 
-    if (value == 2564)
+    switch (SpbContextID) {
+    case TAS2564_CHIP:
         n_result = tas256x_reg_update_bits(SpbContext,
             TAS2564_BOOSTCONFIGURATION2,
             TAS2564_BOOSTCONFIGURATION2_BOOSTMAXVOLTAGE_MASK,
-            (tas2564_bst_vltg+1) << TAS2562_BOOSTCONFIGURATION2_BOOSTMAXVOLTAGE_SHIFT);
-    if (value == 2562)
+            (tas2564_bst_vltg + 1) << TAS2562_BOOSTCONFIGURATION2_BOOSTMAXVOLTAGE_SHIFT);
+        break;
+    case TAS2562_CHIP1:
+    case TAS2562_CHIP2:
         n_result = tas256x_reg_update_bits(SpbContext,
             TAS2562_BOOSTCONFIGURATION2,
             TAS2562_BOOSTCONFIGURATION2_BOOSTMAXVOLTAGE_MASK,
             tas2562_bst_vltg << TAS2562_BOOSTCONFIGURATION2_BOOSTMAXVOLTAGE_SHIFT);
+        break;
+    }
 
     return n_result;
 }
 
-NTSTATUS tas256x_update_current_limit(SPB_CONTEXT* SpbContext, int value)
+NTSTATUS tas256x_update_current_limit(SPB_CONTEXT* SpbContext, UINT8 SpbContextID)
 {
     NTSTATUS n_result = 0;
 
-    if (value == 2564)
+    switch (SpbContextID) {
+    case TAS2564_CHIP:
         n_result = tas256x_reg_update_bits(SpbContext,
             TAS256X_BOOSTCONFIGURATION4,
             TAS256X_BOOSTCONFIGURATION4_BOOSTCURRENTLIMIT_MASK,
             tas2564_bst_ilm << TAS256X_BOOSTCONFIGURATION4_BOOSTCURRENTLIMIT_SHIFT);
-    if (value == 2562)
+        break;
+    case TAS2562_CHIP1:
+    case TAS2562_CHIP2:
         n_result = tas256x_reg_update_bits(SpbContext,
             TAS256X_BOOSTCONFIGURATION4,
             TAS256X_BOOSTCONFIGURATION4_BOOSTCURRENTLIMIT_MASK,
             tas2562_bst_ilm << TAS256X_BOOSTCONFIGURATION4_BOOSTCURRENTLIMIT_SHIFT);
+        break;
+    }
 
     return n_result;
 }
@@ -782,18 +792,23 @@ NTSTATUS tas256x_update_limiter_release_step_size(SPB_CONTEXT* SpbContext)
 /*
 * Downstream driver doesn't have 2562 in this function
 */
-NTSTATUS tas256x_boost_volt_update(SPB_CONTEXT* SpbContext, int value)
+NTSTATUS tas256x_boost_volt_update(SPB_CONTEXT* SpbContext, UINT8 SpbContextID)
 {
     NTSTATUS n_result = 0;
 
-    if (value == 2564)
+    switch (SpbContextID) {
+    case TAS2564_CHIP:
         n_result = tas256x_reg_write(SpbContext,
             TAS256X_PLAYBACKCONFIGURATIONREG0,
             TAS2564_AMP_LEVEL_16dBV);
-    if (value == 2562)
+        break;
+    case TAS2562_CHIP1:
+    case TAS2562_CHIP2:
         n_result = tas256x_reg_write(SpbContext,
             TAS256X_PLAYBACKCONFIGURATIONREG0,
             0x20);
+        break;
+    }
 
     return n_result;
 }
@@ -917,15 +932,16 @@ NTSTATUS tas256x_icn_data(PDEVICE_CONTEXT pDevice)
 /*
 * Note that we're deviating from downstream driver here.
 */
-NTSTATUS tas256x_update_playback_volume(SPB_CONTEXT* SpbContext, int value)
+NTSTATUS tas256x_update_playback_volume(SPB_CONTEXT* SpbContext, UINT8 SpbContextID)
 {
     NTSTATUS status = 0;
 
-    switch (value) {
-    case 2562:
+    switch (SpbContextID) {
+    case TAS2562_CHIP1:
+    case TAS2562_CHIP2:
         status = tas256x_reg_bulk_write(SpbContext, TAS256X_DVC_PCM, &dvc_pcm[tas256x_dvc_pcm][0], sizeof(tas256x_dvc_pcm));
         break;
-    case 2564:
+    case TAS2564_CHIP:
         status = tas256x_reg_bulk_write(SpbContext, TAS256X_DVC_PCM, &dvc_pcm[tas256x_dvc_pcm][0], sizeof(tas256x_dvc_pcm));
         break;
     }
@@ -995,11 +1011,11 @@ NTSTATUS tas2564_rx_mode_update(SPB_CONTEXT* SpbContext, int rx_mode)
     return n_result;
 }
 
-NTSTATUS tas2564_specific(SPB_CONTEXT* SpbContext)
+NTSTATUS tas2564_specific(SPB_CONTEXT* SpbContext, UINT8 SpbContextID)
 {
     NTSTATUS n_result;
 
-    n_result = tas256x_boost_volt_update(SpbContext, 2564);
+    n_result = tas256x_boost_volt_update(SpbContext, SpbContextID);
     n_result = tas2564_rx_mode_update(SpbContext, 1);
     
     return n_result;
@@ -1008,11 +1024,11 @@ NTSTATUS tas2564_specific(SPB_CONTEXT* SpbContext)
 /*
 * Not present in downstream driver
 */
-NTSTATUS tas2562_specific(SPB_CONTEXT* SpbContext)
+NTSTATUS tas2562_specific(SPB_CONTEXT* SpbContext, UINT8 SpbContextID)
 {
     NTSTATUS n_result;
 
-    n_result = tas256x_boost_volt_update(SpbContext, 2562);
+    n_result = tas256x_boost_volt_update(SpbContext, SpbContextID);
 
     return n_result;
 }
@@ -1063,9 +1079,9 @@ NTSTATUS tas256x_load_ctrl_values(PDEVICE_CONTEXT pDevice)
 {
     NTSTATUS status = 0;
 
-    status = tas256x_update_playback_volume(&pDevice->SpbContextA, 2562);
+    status = tas256x_update_playback_volume(&pDevice->SpbContextA, pDevice->SpbContextA_ID);
     if (pDevice->TwoSpeakers)
-        status = tas256x_update_playback_volume(&pDevice->SpbContextB, 2564);
+        status = tas256x_update_playback_volume(&pDevice->SpbContextB, pDevice->SpbContextB_ID);
 
     status = tas256x_update_bop_thr(pDevice);
 
@@ -1073,13 +1089,13 @@ NTSTATUS tas256x_load_ctrl_values(PDEVICE_CONTEXT pDevice)
     if (pDevice->TwoSpeakers)
         status = tas256x_update_bosd_thr(&pDevice->SpbContextB);
     
-    status = tas256x_update_boost_voltage(&pDevice->SpbContextA, 2562);
+    status = tas256x_update_boost_voltage(&pDevice->SpbContextA, pDevice->SpbContextA_ID);
     if (pDevice->TwoSpeakers)
-        status = tas256x_update_boost_voltage(&pDevice->SpbContextB, 2564);
+        status = tas256x_update_boost_voltage(&pDevice->SpbContextB, pDevice->SpbContextB_ID);
 
-    status = tas256x_update_current_limit(&pDevice->SpbContextA, 2562);
+    status = tas256x_update_current_limit(&pDevice->SpbContextA, pDevice->SpbContextA_ID);
     if (pDevice->TwoSpeakers)
-        status = tas256x_update_current_limit(&pDevice->SpbContextB, 2564);
+        status = tas256x_update_current_limit(&pDevice->SpbContextB, pDevice->SpbContextB_ID);
 
     status = tas256x_update_limiter_enable(&pDevice->SpbContextA);
     if (pDevice->TwoSpeakers)
@@ -1193,9 +1209,9 @@ tas256x_load_config(
     tas256x_update_rx_cfg(&pDevice->SpbContextA, 1);
     if (pDevice->TwoSpeakers) {
         tas256x_update_rx_cfg(&pDevice->SpbContextB, 2);
-        tas2564_specific(&pDevice->SpbContextB);
+        tas2564_specific(&pDevice->SpbContextB, pDevice->SpbContextB_ID);
     }
-    tas2562_specific(&pDevice->SpbContextA);
+    tas2562_specific(&pDevice->SpbContextA, pDevice->SpbContextA_ID);
     tas256x_load_ctrl_values(pDevice);
     tas256x_rx_set_fmt(pDevice, 0, 1);
     tas256x_set_bitwidth_slotwidth(pDevice, 24, 16);
@@ -1273,6 +1289,8 @@ OnPrepareHardware(
         status = SpbDeviceOpen(FxDevice, &pDevice->SpbContextB);
 
     pDevice->TwoSpeakers = fSpbResourceFoundA && fSpbResourceFoundB;
+
+    tas256x_get_chipid(pDevice);
 
     TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "%!FUNC! Leaving.");
     return status;
