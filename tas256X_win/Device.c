@@ -62,29 +62,29 @@
 
 NTSTATUS tas256x_change_book_page(SPB_CONTEXT* SpbContext, UINT32 book, UINT32 page)
 {
-    NTSTATUS status;
+    NTSTATUS result;
     UINT32 buf[2];
 
     buf[0] = TAS256X_BOOKCTL_PAGE;
     buf[1] = page;
-    status = SpbDeviceWrite(SpbContext, buf, sizeof(buf));
+    result = SpbDeviceWrite(SpbContext, buf, sizeof(buf));
 
     buf[0] = TAS256X_BOOKCTL_REG;
     buf[1] = book;
-    status = SpbDeviceWrite(SpbContext, buf, sizeof(buf));
+    result = SpbDeviceWrite(SpbContext, buf, sizeof(buf));
 
-    return status;
+    return result;
 }
 
 NTSTATUS tas256x_reg_write(SPB_CONTEXT* SpbContext, UINT32 reg, UINT8 data)
 {
-    NTSTATUS status;
+    NTSTATUS result;
     UINT8 buf[2];
 
-    status = tas256x_change_book_page(SpbContext, TAS256X_BOOK_ID(reg), TAS256X_PAGE_ID(reg));
+    result = tas256x_change_book_page(SpbContext, TAS256X_BOOK_ID(reg), TAS256X_PAGE_ID(reg));
 
-    if (!NT_SUCCESS(status)) {
-        return status;
+    if (!NT_SUCCESS(result)) {
+        return result;
     }
 
     buf[0] = (UINT8)(reg & 0xFF); // While some registers are UINT32, we still need to provide UINT8 value when writing
@@ -99,8 +99,8 @@ NTSTATUS tas256x_reg_bulk_write(
     UINT8* data,
     UINT8 length
 ) {
-    NTSTATUS status;
-    status = tas256x_change_book_page(SpbContext, TAS256X_BOOK_ID(reg), TAS256X_PAGE_ID(reg));
+    NTSTATUS result;
+    result = tas256x_change_book_page(SpbContext, TAS256X_BOOK_ID(reg), TAS256X_PAGE_ID(reg));
 
     return SpbDeviceWrite(SpbContext, data, length);
 }
@@ -110,15 +110,15 @@ NTSTATUS tas256x_reg_read(
     UINT32 reg,
     UINT8* data
 ) {
-    NTSTATUS status;
+    NTSTATUS result;
     UINT8 raw_data = 0;
 
-    status = tas256x_change_book_page(SpbContext, TAS256X_BOOK_ID(reg), TAS256X_PAGE_ID(reg));
+    result = tas256x_change_book_page(SpbContext, TAS256X_BOOK_ID(reg), TAS256X_PAGE_ID(reg));
 
-    status = SpbDeviceWriteRead(SpbContext, &reg, &raw_data, sizeof(UCHAR), sizeof(UINT8));
+    result = SpbDeviceWriteRead(SpbContext, &reg, &raw_data, sizeof(UCHAR), sizeof(UINT8));
     *data = raw_data;
     
-    return status;
+    return result;
 }
 
 NTSTATUS tas256x_reg_update_bits(
@@ -127,13 +127,13 @@ NTSTATUS tas256x_reg_update_bits(
     UINT8 mask,
     UINT8 val)
 {
-    NTSTATUS status;
+    NTSTATUS result;
     UINT8 temp_val, data;
 
-    status = tas256x_reg_read(SpbContext, reg, &data);
+    result = tas256x_reg_read(SpbContext, reg, &data);
 
-    if (!NT_SUCCESS(status)) {
-        return status;
+    if (!NT_SUCCESS(result)) {
+        return result;
     }
 
     temp_val = data & ~mask;
@@ -141,26 +141,26 @@ NTSTATUS tas256x_reg_update_bits(
 
     if (data == temp_val)
     {
-        status = STATUS_SUCCESS;
-        return status;
+        result = STATUS_SUCCESS;
+        return result;
     }
-    status = tas256x_reg_write(SpbContext, reg, temp_val);
+    result = tas256x_reg_write(SpbContext, reg, temp_val);
 
-    return status;
+    return result;
 }
 
 
 NTSTATUS tas256x_set_power_up(PDEVICE_CONTEXT pDevice)
 {
-    NTSTATUS n_result = 0;
+    NTSTATUS result = 0;
 
-    n_result = tas256x_reg_update_bits(&pDevice->SpbContextA, 
+    result = tas256x_reg_update_bits(&pDevice->SpbContextA, 
         TAS256X_POWERCONTROL,
         TAS256X_POWERCONTROL_OPERATIONALMODE10_MASK,
         TAS256X_POWERCONTROL_OPERATIONALMODE10_ACTIVE);
     
     if (pDevice->TwoSpeakers)
-        n_result = tas256x_reg_update_bits(&pDevice->SpbContextB, 
+        result = tas256x_reg_update_bits(&pDevice->SpbContextB, 
             TAS256X_POWERCONTROL,
             TAS256X_POWERCONTROL_OPERATIONALMODE10_MASK,
             TAS256X_POWERCONTROL_OPERATIONALMODE10_ACTIVE);
@@ -169,77 +169,77 @@ NTSTATUS tas256x_set_power_up(PDEVICE_CONTEXT pDevice)
     DELAY_MS(20);
 
     /* Enable Comparator Hysteresis */
-    n_result = tas256x_reg_update_bits(&pDevice->SpbContextA,
+    result = tas256x_reg_update_bits(&pDevice->SpbContextA,
         TAS256X_MISC_CLASSD,
         TAS256X_CMP_HYST_MASK,
         (0x01 << TAS256X_CMP_HYST_SHIFT));
     
     if (pDevice->TwoSpeakers)
-        n_result = tas256x_reg_update_bits(&pDevice->SpbContextB,
+        result = tas256x_reg_update_bits(&pDevice->SpbContextB,
             TAS256X_MISC_CLASSD,
             TAS256X_CMP_HYST_MASK,
             (0x01 << TAS256X_CMP_HYST_SHIFT));
 
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_set_power_mute(PDEVICE_CONTEXT pDevice)
 {
-    NTSTATUS n_result = 0;
+    NTSTATUS result = 0;
 
     /*Disable Comparator Hysteresis before Power Mute */
-    n_result = tas256x_reg_update_bits(&pDevice->SpbContextA,
+    result = tas256x_reg_update_bits(&pDevice->SpbContextA,
         TAS256X_MISC_CLASSD,
         TAS256X_CMP_HYST_MASK,
         (0x00 << TAS256X_CMP_HYST_SHIFT));
     
     if (pDevice->TwoSpeakers)
-        n_result = tas256x_reg_update_bits(&pDevice->SpbContextB,
+        result = tas256x_reg_update_bits(&pDevice->SpbContextB,
             TAS256X_MISC_CLASSD,
             TAS256X_CMP_HYST_MASK,
             (0x00 << TAS256X_CMP_HYST_SHIFT));
 
-    n_result = tas256x_reg_update_bits(&pDevice->SpbContextA, 
+    result = tas256x_reg_update_bits(&pDevice->SpbContextA, 
         TAS256X_POWERCONTROL,
         TAS256X_POWERCONTROL_OPERATIONALMODE10_MASK,
         TAS256X_POWERCONTROL_OPERATIONALMODE10_MUTE);
     
     if (pDevice->TwoSpeakers)
-        n_result = tas256x_reg_update_bits(&pDevice->SpbContextB, 
+        result = tas256x_reg_update_bits(&pDevice->SpbContextB, 
             TAS256X_POWERCONTROL,
             TAS256X_POWERCONTROL_OPERATIONALMODE10_MASK,
             TAS256X_POWERCONTROL_OPERATIONALMODE10_MUTE);
 
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_set_power_shutdown(PDEVICE_CONTEXT pDevice)
 {
-    NTSTATUS n_result = 0;
+    NTSTATUS result = 0;
 
     /*Disable Comparator Hysteresis before Power Down */
-    n_result = tas256x_reg_update_bits(&pDevice->SpbContextA,
+    result = tas256x_reg_update_bits(&pDevice->SpbContextA,
         TAS256X_MISC_CLASSD,
         TAS256X_CMP_HYST_MASK,
         (0x00 << TAS256X_CMP_HYST_SHIFT));
 
-    n_result = tas256x_reg_update_bits(&pDevice->SpbContextA, TAS256X_POWERCONTROL,
+    result = tas256x_reg_update_bits(&pDevice->SpbContextA, TAS256X_POWERCONTROL,
         TAS256X_POWERCONTROL_OPERATIONALMODE10_MASK,
         TAS256X_POWERCONTROL_OPERATIONALMODE10_SHUTDOWN);
 
     if (pDevice->TwoSpeakers) {
-        n_result = tas256x_reg_update_bits(&pDevice->SpbContextB,
+        result = tas256x_reg_update_bits(&pDevice->SpbContextB,
             TAS256X_MISC_CLASSD,
             TAS256X_CMP_HYST_MASK,
             (0x00 << TAS256X_CMP_HYST_SHIFT));
-        n_result = tas256x_reg_update_bits(&pDevice->SpbContextB, TAS256X_POWERCONTROL,
+        result = tas256x_reg_update_bits(&pDevice->SpbContextB, TAS256X_POWERCONTROL,
             TAS256X_POWERCONTROL_OPERATIONALMODE10_MASK,
             TAS256X_POWERCONTROL_OPERATIONALMODE10_SHUTDOWN);
     }
 
     /*Device Shutdown need 20ms after shutdown writes are made*/
     DELAY_MS(20);
-    return n_result;
+    return result;
 }
 
 /*
@@ -250,16 +250,15 @@ NTSTATUS tas256x_set_power_shutdown(PDEVICE_CONTEXT pDevice)
 */
 UINT8 tas256x_power_check(SPB_CONTEXT* SpbContext)
 {
-    int n_result = 0;
-    UINT8 status = 0;
+    UINT8 result = 0;
 
-    n_result = tas256x_reg_read(SpbContext, 
+    tas256x_reg_read(SpbContext, 
         TAS256X_POWERCONTROL,
-        &status);
+        &result);
 
-    status &= TAS256X_POWERCONTROL_OPERATIONALMODE10_MASK;
+    result &= TAS256X_POWERCONTROL_OPERATIONALMODE10_MASK;
 
-    return status;
+    return result;
 }
 
 /*
@@ -268,10 +267,10 @@ UINT8 tas256x_power_check(SPB_CONTEXT* SpbContext)
  */
 NTSTATUS tas256x_iv_sense_enable_set(PDEVICE_CONTEXT pDevice, bool enable)
 {
-    NTSTATUS n_result = 0;
+    NTSTATUS result = 0;
 
     if (enable) {
-        n_result = tas256x_reg_update_bits(&pDevice->SpbContextA,
+        result = tas256x_reg_update_bits(&pDevice->SpbContextA,
             TAS256X_POWERCONTROL,
             TAS256X_POWERCONTROL_ISNSPOWER_MASK |
             TAS256X_POWERCONTROL_VSNSPOWER_MASK,
@@ -279,7 +278,7 @@ NTSTATUS tas256x_iv_sense_enable_set(PDEVICE_CONTEXT pDevice, bool enable)
             TAS256X_POWERCONTROL_ISNSPOWER_ACTIVE);
         
         if (pDevice->TwoSpeakers)
-            n_result = tas256x_reg_update_bits(&pDevice->SpbContextB,
+            result = tas256x_reg_update_bits(&pDevice->SpbContextB,
                 TAS256X_POWERCONTROL,
                 TAS256X_POWERCONTROL_ISNSPOWER_MASK |
                 TAS256X_POWERCONTROL_VSNSPOWER_MASK,
@@ -287,7 +286,7 @@ NTSTATUS tas256x_iv_sense_enable_set(PDEVICE_CONTEXT pDevice, bool enable)
                 TAS256X_POWERCONTROL_ISNSPOWER_ACTIVE);
     }
     else {
-        n_result = tas256x_reg_update_bits(&pDevice->SpbContextA,
+        result = tas256x_reg_update_bits(&pDevice->SpbContextA,
             TAS256X_POWERCONTROL,
             TAS256X_POWERCONTROL_ISNSPOWER_MASK |
             TAS256X_POWERCONTROL_VSNSPOWER_MASK,
@@ -295,19 +294,19 @@ NTSTATUS tas256x_iv_sense_enable_set(PDEVICE_CONTEXT pDevice, bool enable)
             TAS256X_POWERCONTROL_ISNSPOWER_ACTIVE);
         
         if (pDevice->TwoSpeakers)
-            n_result = tas256x_reg_update_bits(&pDevice->SpbContextB,
+            result = tas256x_reg_update_bits(&pDevice->SpbContextB,
                 TAS256X_POWERCONTROL,
                 TAS256X_POWERCONTROL_ISNSPOWER_MASK |
                 TAS256X_POWERCONTROL_VSNSPOWER_MASK,
                 TAS256X_POWERCONTROL_VSNSPOWER_ACTIVE |
                 TAS256X_POWERCONTROL_ISNSPOWER_ACTIVE);
     }
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_iv_slot_config(PDEVICE_CONTEXT pDevice)
 {
-    NTSTATUS n_result = 0;
+    NTSTATUS result = 0;
 
     tas256x_reg_update_bits(&pDevice->SpbContextA,
         TAS256X_TDMCONFIGURATIONREG5, 0xff, 0x46);
@@ -323,30 +322,30 @@ NTSTATUS tas256x_iv_slot_config(PDEVICE_CONTEXT pDevice)
             TAS256X_TDMCONFIGURATIONREG6, 0xff, 0x40);
     }
 
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_iv_bitwidth_config(PDEVICE_CONTEXT pDevice)
 {
-    NTSTATUS n_result = 0;
+    NTSTATUS result = 0;
 
-    n_result = tas256x_reg_update_bits(&pDevice->SpbContextA,
+    result = tas256x_reg_update_bits(&pDevice->SpbContextA,
         TAS256X_TDMCONFIGURATIONREG2,
         TAS256X_TDMCONFIGURATIONREG2_IVLEN76_MASK,
         TAS256X_TDMCONFIGURATIONREG2_IVLENCFG76_16BITS);
 
     if (pDevice->TwoSpeakers)
-        n_result = tas256x_reg_update_bits(&pDevice->SpbContextB,
+        result = tas256x_reg_update_bits(&pDevice->SpbContextB,
             TAS256X_TDMCONFIGURATIONREG6,
             TAS256X_TDMCONFIGURATIONREG2_IVLEN76_MASK,
             TAS256X_TDMCONFIGURATIONREG2_IVLENCFG76_16BITS);
 
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_set_samplerate(PDEVICE_CONTEXT pDevice, int samplerate)
 {
-    NTSTATUS n_result = 0;
+    NTSTATUS result = 0;
     UINT8 data = 0;
     UINT8 data2 = 0;
 
@@ -377,29 +376,29 @@ NTSTATUS tas256x_set_samplerate(PDEVICE_CONTEXT pDevice, int samplerate)
         break;
     }
 
-    n_result = tas256x_reg_update_bits(&pDevice->SpbContextA,
+    result = tas256x_reg_update_bits(&pDevice->SpbContextA,
         TAS256X_TDMCONFIGURATIONREG0,
         TAS256X_TDMCONFIGURATIONREG0_SAMPRATERAMP_MASK,
         data);
 
-    n_result = tas256x_reg_update_bits(&pDevice->SpbContextA,
+    result = tas256x_reg_update_bits(&pDevice->SpbContextA,
         TAS256X_TDMCONFIGURATIONREG0,
         TAS256X_TDMCONFIGURATIONREG0_SAMPRATE31_MASK,
         data2);
 
     if (pDevice->TwoSpeakers) {
-        n_result = tas256x_reg_update_bits(&pDevice->SpbContextB,
+        result = tas256x_reg_update_bits(&pDevice->SpbContextB,
             TAS256X_TDMCONFIGURATIONREG0,
             TAS256X_TDMCONFIGURATIONREG0_SAMPRATERAMP_MASK,
             data);
 
-        n_result = tas256x_reg_update_bits(&pDevice->SpbContextB,
+        result = tas256x_reg_update_bits(&pDevice->SpbContextB,
             TAS256X_TDMCONFIGURATIONREG0,
             TAS256X_TDMCONFIGURATIONREG0_SAMPRATE31_MASK,
             data2);
     }
 
-    return n_result;
+    return result;
 }
 
 /*
@@ -408,7 +407,7 @@ NTSTATUS tas256x_set_samplerate(PDEVICE_CONTEXT pDevice, int samplerate)
  */
 NTSTATUS tas256x_rx_set_fmt(PDEVICE_CONTEXT pDevice, unsigned int rx_edge, UINT8 rx_start_slot)
 {
-    NTSTATUS n_result = 0;
+    NTSTATUS result = 0;
     UINT8 data = 0;
 
     if (rx_edge)
@@ -440,12 +439,12 @@ NTSTATUS tas256x_rx_set_fmt(PDEVICE_CONTEXT pDevice, unsigned int rx_edge, UINT8
                 TAS256X_TDMCONFIGURATIONREG1_RXOFFSET51_SHIFT));
     }
 
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_rx_set_slot(PDEVICE_CONTEXT pDevice, int slot_width)
 {
-    NTSTATUS n_result = -1;
+    NTSTATUS result = -1;
     UINT8 tmp_slot = 0;
 
     switch (slot_width) {
@@ -460,23 +459,23 @@ NTSTATUS tas256x_rx_set_slot(PDEVICE_CONTEXT pDevice, int slot_width)
         break;
     }
 
-    n_result = tas256x_reg_update_bits(&pDevice->SpbContextA,
+    result = tas256x_reg_update_bits(&pDevice->SpbContextA,
         TAS256X_TDMCONFIGURATIONREG2,
         TAS256X_TDMCONFIGURATIONREG2_RXSLEN10_MASK,
         tmp_slot);
 
     if (pDevice->TwoSpeakers)
-        n_result = tas256x_reg_update_bits(&pDevice->SpbContextB,
+        result = tas256x_reg_update_bits(&pDevice->SpbContextB,
             TAS256X_TDMCONFIGURATIONREG2,
             TAS256X_TDMCONFIGURATIONREG2_RXSLEN10_MASK,
             tmp_slot);
 
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_rx_set_bitwidth(PDEVICE_CONTEXT pDevice, int bitwidth)
 {
-    NTSTATUS n_result = 0;
+    NTSTATUS result = 0;
     UINT8 temp_bitwidth = (0x2 << 2);
 
     switch (bitwidth) {
@@ -491,130 +490,130 @@ NTSTATUS tas256x_rx_set_bitwidth(PDEVICE_CONTEXT pDevice, int bitwidth)
         break;
     }
 
-    n_result = tas256x_reg_update_bits(&pDevice->SpbContextA,
+    result = tas256x_reg_update_bits(&pDevice->SpbContextA,
         TAS256X_TDMCONFIGURATIONREG2,
         TAS256X_TDMCONFIGURATIONREG2_RXWLEN32_MASK,
         temp_bitwidth);
     if (pDevice->TwoSpeakers)
-        n_result = tas256x_reg_update_bits(&pDevice->SpbContextB,
+        result = tas256x_reg_update_bits(&pDevice->SpbContextB,
             TAS256X_TDMCONFIGURATIONREG2,
             TAS256X_TDMCONFIGURATIONREG2_RXWLEN32_MASK,
             temp_bitwidth);
 
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_update_bop_thr(PDEVICE_CONTEXT pDevice)
 {
-    NTSTATUS n_result = -1;
+    NTSTATUS result = -1;
     UINT8 data = tas256x_bop_thd;
 
-    n_result = tas256x_reg_bulk_write(&pDevice->SpbContextA,
+    result = tas256x_reg_bulk_write(&pDevice->SpbContextA,
         TAS256X_BOP_TH,
         &bop_thd[data][0],
         sizeof(bop_thd[data][0]));
     if (pDevice->TwoSpeakers)
-        n_result = tas256x_reg_bulk_write(&pDevice->SpbContextB,
+        result = tas256x_reg_bulk_write(&pDevice->SpbContextB,
             TAS256X_BOP_TH,
             &bop_thd[data][0],
             sizeof(bop_thd[data][0]));
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_update_bop_enable(PDEVICE_CONTEXT pDevice)
 {
-    NTSTATUS n_result = -1;
+    NTSTATUS result = -1;
 
-    n_result = tas256x_reg_update_bits(&pDevice->SpbContextA,
+    result = tas256x_reg_update_bits(&pDevice->SpbContextA,
         TAS256X_BOPCONFIGURATION0,
         TAS256X_BOP_ENABLE_MASK,
         tas2562_bop_enable << TAS256X_BOP_ENABLE_SHIFT);
     if (pDevice->TwoSpeakers)
-        n_result = tas256x_reg_update_bits(&pDevice->SpbContextB,
+        result = tas256x_reg_update_bits(&pDevice->SpbContextB,
             TAS256X_BOPCONFIGURATION0,
             TAS256X_BOP_ENABLE_MASK,
             tas2564_bop_enable << TAS256X_BOP_ENABLE_SHIFT);
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_update_bop_mute(PDEVICE_CONTEXT pDevice)
 {
-    NTSTATUS n_result = -1;
+    NTSTATUS result = -1;
 
-    n_result = tas256x_reg_update_bits(&pDevice->SpbContextA,
+    result = tas256x_reg_update_bits(&pDevice->SpbContextA,
         TAS256X_BOPCONFIGURATION0,
         TAS256X_BOP_MUTE_MASK,
         tas2562_bop_mute << TAS256X_BOP_MUTE_SHIFT);
     if (pDevice->TwoSpeakers)
-        n_result = tas256x_reg_update_bits(&pDevice->SpbContextB,
+        result = tas256x_reg_update_bits(&pDevice->SpbContextB,
             TAS256X_BOPCONFIGURATION0,
             TAS256X_BOP_MUTE_MASK,
             tas2564_bop_mute << TAS256X_BOP_MUTE_SHIFT);
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_update_bop_shutdown_enable(PDEVICE_CONTEXT pDevice)
 {
-    NTSTATUS n_result = -1;
+    NTSTATUS result = -1;
 
-    n_result = tas256x_reg_update_bits(&pDevice->SpbContextA,
+    result = tas256x_reg_update_bits(&pDevice->SpbContextA,
         TAS256X_BOPCONFIGURATION0,
         TAS256X_BOP_SHUTDOWN_ENABLE_MASK,
         tas2562_bosd_enable << TAS256X_BOP_SHUTDOWN_ENABLE_SHIFT);
     if (pDevice->TwoSpeakers)
-        n_result = tas256x_reg_update_bits(&pDevice->SpbContextB,
+        result = tas256x_reg_update_bits(&pDevice->SpbContextB,
             TAS256X_BOPCONFIGURATION0,
             TAS256X_BOP_SHUTDOWN_ENABLE_MASK,
             tas2564_bosd_enable << TAS256X_BOP_SHUTDOWN_ENABLE_SHIFT);
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_update_bop_attack_rate(PDEVICE_CONTEXT pDevice)
 {
-    NTSTATUS n_result = -1;
+    NTSTATUS result = -1;
 
-    n_result = tas256x_reg_update_bits(&pDevice->SpbContextA,
+    result = tas256x_reg_update_bits(&pDevice->SpbContextA,
         TAS256X_BOPCONFIGURATION1,
         TAS256X_BOP_ATTACKRATE_MASK,
         tas2562_bop_att_rate << TAS256X_BOP_ATTACKRATE_SHIFT);
     if (pDevice->TwoSpeakers)
-        n_result = tas256x_reg_update_bits(&pDevice->SpbContextB,
+        result = tas256x_reg_update_bits(&pDevice->SpbContextB,
             TAS256X_BOPCONFIGURATION1,
             TAS256X_BOP_ATTACKRATE_MASK,
             tas2564_bop_att_rate << TAS256X_BOP_ATTACKRATE_SHIFT);
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_update_bop_attack_step_size(PDEVICE_CONTEXT pDevice)
 {
-    NTSTATUS n_result = -1;
+    NTSTATUS result = -1;
 
-    n_result = tas256x_reg_update_bits(&pDevice->SpbContextA,
+    result = tas256x_reg_update_bits(&pDevice->SpbContextA,
         TAS256X_BOPCONFIGURATION1,
         TAS256X_BOP_ATTACKSTEPSIZE_MASK,
         tas2562_bop_att_stp_size << TAS256X_BOP_ATTACKSTEPSIZE_SHIFT);
     if (pDevice->TwoSpeakers)
-        n_result = tas256x_reg_update_bits(&pDevice->SpbContextB,
+        result = tas256x_reg_update_bits(&pDevice->SpbContextB,
             TAS256X_BOPCONFIGURATION1,
             TAS256X_BOP_ATTACKSTEPSIZE_MASK,
             tas2564_bop_att_stp_size << TAS256X_BOP_ATTACKSTEPSIZE_SHIFT);
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_update_bop_hold_time(PDEVICE_CONTEXT pDevice)
 {
-    NTSTATUS n_result = -1;
+    NTSTATUS result = -1;
 
-    n_result = tas256x_reg_update_bits(&pDevice->SpbContextA,
+    result = tas256x_reg_update_bits(&pDevice->SpbContextA,
         TAS256X_BOPCONFIGURATION1,
         TAS256X_BOP_HOLDTIME_MASK,
         tas2562_bop_hld_time << TAS256X_BOP_HOLDTIME_SHIFT);
     if (pDevice->TwoSpeakers)
-        n_result = tas256x_reg_update_bits(&pDevice->SpbContextB,
+        result = tas256x_reg_update_bits(&pDevice->SpbContextB,
             TAS256X_BOPCONFIGURATION1,
             TAS256X_BOP_HOLDTIME_MASK,
             tas2564_bop_hld_time << TAS256X_BOP_HOLDTIME_SHIFT);
-    return n_result;
+    return result;
 }
 
 int tas256x_get_chipid(PDEVICE_CONTEXT pDevice)
@@ -632,7 +631,7 @@ int tas256x_get_chipid(PDEVICE_CONTEXT pDevice)
 
 NTSTATUS tas256x_update_rx_cfg(SPB_CONTEXT* SpbContext, int value)
 {
-    NTSTATUS n_result = 0;
+    NTSTATUS result = 0;
     UINT8 data = 0;
 
     switch (value) {
@@ -650,143 +649,143 @@ NTSTATUS tas256x_update_rx_cfg(SPB_CONTEXT* SpbContext, int value)
         break;
     }
 
-    n_result = tas256x_reg_update_bits(SpbContext,
+    result = tas256x_reg_update_bits(SpbContext,
         TAS256X_TDMCONFIGURATIONREG2,
         TAS256X_TDMCONFIGURATIONREG2_RXSCFG54_MASK,
         data);
 
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_software_reset(SPB_CONTEXT* SpbContext)
 {
-    NTSTATUS n_result;
+    NTSTATUS result;
 
-    n_result = tas256x_reg_write(SpbContext,
+    result = tas256x_reg_write(SpbContext,
         TAS256X_SOFTWARERESET,
         TAS256X_SOFTWARERESET_SOFTWARERESET_RESET);
         
    DELAY_MS(20);
 
-   return n_result;
+   return result;
 }
 
 NTSTATUS tas256x_update_boost_voltage(SPB_CONTEXT* SpbContext, UINT8 SpbContextID)
 {
-    NTSTATUS n_result = 0;
+    NTSTATUS result = 0;
 
     switch (SpbContextID) {
     case TAS2564_CHIP:
-        n_result = tas256x_reg_update_bits(SpbContext,
+        result = tas256x_reg_update_bits(SpbContext,
             TAS2564_BOOSTCONFIGURATION2,
             TAS2564_BOOSTCONFIGURATION2_BOOSTMAXVOLTAGE_MASK,
             (tas2564_bst_vltg + 1) << TAS2562_BOOSTCONFIGURATION2_BOOSTMAXVOLTAGE_SHIFT);
         break;
     case TAS2562_CHIP1:
     case TAS2562_CHIP2:
-        n_result = tas256x_reg_update_bits(SpbContext,
+        result = tas256x_reg_update_bits(SpbContext,
             TAS2562_BOOSTCONFIGURATION2,
             TAS2562_BOOSTCONFIGURATION2_BOOSTMAXVOLTAGE_MASK,
             tas2562_bst_vltg << TAS2562_BOOSTCONFIGURATION2_BOOSTMAXVOLTAGE_SHIFT);
         break;
     }
 
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_update_current_limit(SPB_CONTEXT* SpbContext, UINT8 SpbContextID)
 {
-    NTSTATUS n_result = 0;
+    NTSTATUS result = 0;
 
     switch (SpbContextID) {
     case TAS2564_CHIP:
-        n_result = tas256x_reg_update_bits(SpbContext,
+        result = tas256x_reg_update_bits(SpbContext,
             TAS256X_BOOSTCONFIGURATION4,
             TAS256X_BOOSTCONFIGURATION4_BOOSTCURRENTLIMIT_MASK,
             tas2564_bst_ilm << TAS256X_BOOSTCONFIGURATION4_BOOSTCURRENTLIMIT_SHIFT);
         break;
     case TAS2562_CHIP1:
     case TAS2562_CHIP2:
-        n_result = tas256x_reg_update_bits(SpbContext,
+        result = tas256x_reg_update_bits(SpbContext,
             TAS256X_BOOSTCONFIGURATION4,
             TAS256X_BOOSTCONFIGURATION4_BOOSTCURRENTLIMIT_MASK,
             tas2562_bst_ilm << TAS256X_BOOSTCONFIGURATION4_BOOSTCURRENTLIMIT_SHIFT);
         break;
     }
 
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_update_limiter_attack_rate(SPB_CONTEXT* SpbContext)
 {
-    NTSTATUS n_result = 0;
+    NTSTATUS result = 0;
 
-    n_result = tas256x_reg_update_bits(SpbContext,
+    result = tas256x_reg_update_bits(SpbContext,
             TAS256X_LIMITERCONFIGURATION0,
             TAS256X_LIMITER_ATTACKRATE_MASK,
             tas256x_lim_att_rate << TAS256X_LIMITER_ATTACKRATE_SHIFT);
 
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_update_limiter_enable(SPB_CONTEXT* SpbContext)
 {
-    NTSTATUS n_result = 0;
+    NTSTATUS result = 0;
 
-    n_result = tas256x_reg_update_bits(SpbContext,
+    result = tas256x_reg_update_bits(SpbContext,
             TAS256X_LIMITERCONFIGURATION0,
             TAS256X_LIMITER_ENABLE_MASK,
             tas256x_lim_switch << TAS256X_LIMITER_ENABLE_SHIFT);
 
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_update_limiter_attack_step_size(SPB_CONTEXT* SpbContext)
 {
-    NTSTATUS n_result = 0;
+    NTSTATUS result = 0;
 
-    n_result = tas256x_reg_update_bits(SpbContext,
+    result = tas256x_reg_update_bits(SpbContext,
             TAS256X_LIMITERCONFIGURATION0,
             TAS256X_LIMITER_ATTACKSTEPSIZE_MASK,
             tas256x_lim_att_stp_size << TAS256X_LIMITER_ATTACKSTEPSIZE_SHIFT);
 
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_update_vbat_lpf(SPB_CONTEXT* SpbContext)
 {
-    NTSTATUS n_result = 0;
+    NTSTATUS result = 0;
 
-    n_result = tas256x_reg_update_bits(SpbContext,
+    result = tas256x_reg_update_bits(SpbContext,
         TAS256X_VBATFILTER,
         TAS256X_VBAT_LPF_MASK,
         tas256x_vbat_lpf << TAS256X_VBAT_LPF_SHIFT);
 
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_update_limiter_release_rate(SPB_CONTEXT* SpbContext)
 {
-    NTSTATUS n_result = 0;
+    NTSTATUS result = 0;
 
-    n_result = tas256x_reg_update_bits(SpbContext,
+    result = tas256x_reg_update_bits(SpbContext,
         TAS256X_LIMITERCONFIGURATION1,
         TAS256X_LIMITER_RELEASERATE_MASK,
         tas256x_lim_rel_rate << TAS256X_LIMITER_RELEASERATE_SHIFT);
 
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_update_limiter_release_step_size(SPB_CONTEXT* SpbContext)
 {
-    NTSTATUS n_result = 0;
+    NTSTATUS result = 0;
 
-    n_result = tas256x_reg_update_bits(SpbContext,
+    result = tas256x_reg_update_bits(SpbContext,
         TAS256X_LIMITERCONFIGURATION1,
         TAS256X_LIMITER_RELEASESTEPSIZE_MASK,
         tas256x_lim_rel_stp_size << TAS256X_LIMITER_RELEASESTEPSIZE_SHIFT);
 
-    return n_result;
+    return result;
 }
 
 /*
@@ -794,139 +793,139 @@ NTSTATUS tas256x_update_limiter_release_step_size(SPB_CONTEXT* SpbContext)
 */
 NTSTATUS tas256x_boost_volt_update(SPB_CONTEXT* SpbContext, UINT8 SpbContextID)
 {
-    NTSTATUS n_result = 0;
+    NTSTATUS result = 0;
 
     switch (SpbContextID) {
     case TAS2564_CHIP:
-        n_result = tas256x_reg_write(SpbContext,
+        result = tas256x_reg_write(SpbContext,
             TAS256X_PLAYBACKCONFIGURATIONREG0,
             TAS2564_AMP_LEVEL_16dBV);
         break;
     case TAS2562_CHIP1:
     case TAS2562_CHIP2:
-        n_result = tas256x_reg_write(SpbContext,
+        result = tas256x_reg_write(SpbContext,
             TAS256X_PLAYBACKCONFIGURATIONREG0,
             0x20);
         break;
     }
 
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_set_misc_config(PDEVICE_CONTEXT pDevice)
 {
-    NTSTATUS n_result = 0;
+    NTSTATUS result = 0;
 
-    n_result = tas256x_reg_write(&pDevice->SpbContextA,
+    result = tas256x_reg_write(&pDevice->SpbContextA,
         TAS256X_MISCCONFIGURATIONREG0,
         0xcf);
 
     if (pDevice->TwoSpeakers)
-        n_result = tas256x_reg_write(&pDevice->SpbContextB,
+        result = tas256x_reg_write(&pDevice->SpbContextB,
             TAS256X_MISCCONFIGURATIONREG0,
             0xcf);
 
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_set_clock_config(PDEVICE_CONTEXT pDevice)
 {
-    NTSTATUS n_result;
+    NTSTATUS result;
 
-    n_result = tas256x_reg_write(&pDevice->SpbContextA,
+    result = tas256x_reg_write(&pDevice->SpbContextA,
         TAS256X_CLOCKCONFIGURATION,
         0x0c);
 
-    n_result |= tas256x_reg_update_bits(&pDevice->SpbContextA,
+    result |= tas256x_reg_update_bits(&pDevice->SpbContextA,
         TAS256X_INTERRUPTCONFIGURATION,
         TAS256X_CLOCK_HALT_TIMER_MASK,
         TAS256X_CLOCK_HALT_838MS);
     
     if (pDevice->TwoSpeakers) {
-        n_result = tas256x_reg_write(&pDevice->SpbContextB,
+        result = tas256x_reg_write(&pDevice->SpbContextB,
             TAS256X_CLOCKCONFIGURATION,
             0x0c);
 
-        n_result |= tas256x_reg_update_bits(&pDevice->SpbContextB,
+        result |= tas256x_reg_update_bits(&pDevice->SpbContextB,
             TAS256X_INTERRUPTCONFIGURATION,
             TAS256X_CLOCK_HALT_TIMER_MASK,
             TAS256X_CLOCK_HALT_838MS);
     }
 
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_interrupt_clear(PDEVICE_CONTEXT pDevice)
 {
-    NTSTATUS n_result;
+    NTSTATUS result;
 
-    n_result = tas256x_reg_update_bits(&pDevice->SpbContextA,
+    result = tas256x_reg_update_bits(&pDevice->SpbContextA,
         TAS256X_INTERRUPTCONFIGURATION,
         TAS256X_INTERRUPTCONFIGURATION_LTCHINTCLEAR_MASK,
         TAS256X_INTERRUPTCONFIGURATION_LTCHINTCLEAR);
     if (pDevice->TwoSpeakers) {
-        n_result = tas256x_reg_update_bits(&pDevice->SpbContextB,
+        result = tas256x_reg_update_bits(&pDevice->SpbContextB,
             TAS256X_INTERRUPTCONFIGURATION,
             TAS256X_INTERRUPTCONFIGURATION_LTCHINTCLEAR_MASK,
             TAS256X_INTERRUPTCONFIGURATION_LTCHINTCLEAR);
     }
 
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_interrupt_enable(PDEVICE_CONTEXT pDevice, int val)
 {
-    NTSTATUS n_result;
+    NTSTATUS result;
 
     if (val) {
-        n_result = tas256x_reg_write(&pDevice->SpbContextA,
+        result = tas256x_reg_write(&pDevice->SpbContextA,
             TAS256X_INTERRUPTMASKREG0,
             0xf8);
-        n_result = tas256x_reg_write(&pDevice->SpbContextA,
+        result = tas256x_reg_write(&pDevice->SpbContextA,
             TAS256X_INTERRUPTMASKREG1,
             0xb1);
         if (pDevice->TwoSpeakers) {
-            n_result = tas256x_reg_write(&pDevice->SpbContextB,
+            result = tas256x_reg_write(&pDevice->SpbContextB,
                 TAS256X_INTERRUPTMASKREG0,
                 0xf8);
-            n_result = tas256x_reg_write(&pDevice->SpbContextB,
+            result = tas256x_reg_write(&pDevice->SpbContextB,
                 TAS256X_INTERRUPTMASKREG1,
                 0xb1);
         }
     }
     else {
-        n_result = tas256x_reg_write(&pDevice->SpbContextA,
+        result = tas256x_reg_write(&pDevice->SpbContextA,
             TAS256X_INTERRUPTMASKREG0,
             TAS256X_INTERRUPTMASKREG0_DISABLE);
-        n_result = tas256x_reg_write(&pDevice->SpbContextA,
+        result = tas256x_reg_write(&pDevice->SpbContextA,
             TAS256X_INTERRUPTMASKREG1,
             TAS256X_INTERRUPTMASKREG1_DISABLE);
         if (pDevice->TwoSpeakers) {
-            n_result = tas256x_reg_write(&pDevice->SpbContextB,
+            result = tas256x_reg_write(&pDevice->SpbContextB,
                 TAS256X_INTERRUPTMASKREG0,
                 TAS256X_INTERRUPTMASKREG0_DISABLE);
-            n_result = tas256x_reg_write(&pDevice->SpbContextB,
+            result = tas256x_reg_write(&pDevice->SpbContextB,
                 TAS256X_INTERRUPTMASKREG1,
                 TAS256X_INTERRUPTMASKREG1_DISABLE);
         }
     }
 
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_icn_data(PDEVICE_CONTEXT pDevice)
 {
-    NTSTATUS n_result;
+    NTSTATUS result;
 
-    n_result = tas256x_reg_bulk_write(&pDevice->SpbContextA, TAS256X_ICN_THRESHOLD_REG, p_icn_threshold, sizeof(p_icn_threshold));
-    n_result = tas256x_reg_bulk_write(&pDevice->SpbContextA, TAS256X_ICN_HYSTERESIS_REG, p_icn_hysteresis, sizeof(p_icn_hysteresis));
+    result = tas256x_reg_bulk_write(&pDevice->SpbContextA, TAS256X_ICN_THRESHOLD_REG, p_icn_threshold, sizeof(p_icn_threshold));
+    result = tas256x_reg_bulk_write(&pDevice->SpbContextA, TAS256X_ICN_HYSTERESIS_REG, p_icn_hysteresis, sizeof(p_icn_hysteresis));
 
     if (pDevice->TwoSpeakers) {
-        n_result = tas256x_reg_bulk_write(&pDevice->SpbContextB, TAS256X_ICN_THRESHOLD_REG, p_icn_threshold, sizeof(p_icn_threshold));
-        n_result = tas256x_reg_bulk_write(&pDevice->SpbContextB, TAS256X_ICN_HYSTERESIS_REG, p_icn_hysteresis, sizeof(p_icn_hysteresis));
+        result = tas256x_reg_bulk_write(&pDevice->SpbContextB, TAS256X_ICN_THRESHOLD_REG, p_icn_threshold, sizeof(p_icn_threshold));
+        result = tas256x_reg_bulk_write(&pDevice->SpbContextB, TAS256X_ICN_HYSTERESIS_REG, p_icn_hysteresis, sizeof(p_icn_hysteresis));
     }
 
-    return n_result;
+    return result;
 }
 
 /*
@@ -934,24 +933,24 @@ NTSTATUS tas256x_icn_data(PDEVICE_CONTEXT pDevice)
 */
 NTSTATUS tas256x_update_playback_volume(SPB_CONTEXT* SpbContext, UINT8 SpbContextID)
 {
-    NTSTATUS status = 0;
+    NTSTATUS result = 0;
 
     switch (SpbContextID) {
     case TAS2562_CHIP1:
     case TAS2562_CHIP2:
-        status = tas256x_reg_bulk_write(SpbContext, TAS256X_DVC_PCM, &dvc_pcm[tas256x_dvc_pcm][0], sizeof(tas256x_dvc_pcm));
+        result = tas256x_reg_bulk_write(SpbContext, TAS256X_DVC_PCM, &dvc_pcm[tas256x_dvc_pcm][0], sizeof(tas256x_dvc_pcm));
         break;
     case TAS2564_CHIP:
-        status = tas256x_reg_bulk_write(SpbContext, TAS256X_DVC_PCM, &dvc_pcm[tas256x_dvc_pcm][0], sizeof(tas256x_dvc_pcm));
+        result = tas256x_reg_bulk_write(SpbContext, TAS256X_DVC_PCM, &dvc_pcm[tas256x_dvc_pcm][0], sizeof(tas256x_dvc_pcm));
         break;
     }
 
-    return status;
+    return result;
 }
 
 NTSTATUS tas256x_set_power_state(PDEVICE_CONTEXT pDevice, int state)
 {
-    NTSTATUS n_result = 0;
+    NTSTATUS result = 0;
 
     switch (state) {
     case TAS256X_POWER_ACTIVE:
@@ -973,7 +972,7 @@ NTSTATUS tas256x_set_power_state(PDEVICE_CONTEXT pDevice, int state)
         break;
     }
 
-    return n_result;
+    return result;
 }
 
 /*
@@ -981,44 +980,44 @@ NTSTATUS tas256x_set_power_state(PDEVICE_CONTEXT pDevice, int state)
 */
 NTSTATUS tas2564_rx_mode_update(SPB_CONTEXT* SpbContext, int rx_mode)
 {
-    NTSTATUS n_result = 0;
+    NTSTATUS result = 0;
 
     if (rx_mode) {
-        n_result = tas256x_reg_update_bits(SpbContext,
+        result = tas256x_reg_update_bits(SpbContext,
             TAS2564_PLAYBACKCONFIGURATIONREG0,
             TAS2564_PLAYBACKCONFIGURATIONREG_RX_SPKR_MODE_MASK,
             TAS2564_PLAYBACKCONFIGURATIONREG_RX_MODE);
-        n_result = tas256x_reg_write(SpbContext,
+        result = tas256x_reg_write(SpbContext,
             TAS256X_TEST_PAGE_LOCK,
             0xd);
-        n_result |= tas256x_reg_write(SpbContext,
+        result |= tas256x_reg_write(SpbContext,
             TAS256X_DAC_MODULATOR,
             0xc0);
-        n_result |= tas256x_reg_write(SpbContext,
+        result |= tas256x_reg_write(SpbContext,
             TAS256X_ICN_IMPROVE,
             0x1f);
-        n_result |= tas256x_reg_write(SpbContext,
+        result |= tas256x_reg_write(SpbContext,
             TAS256X_CLASSDCONFIGURATION2,
             0x08);
-        n_result |= tas256x_reg_write(SpbContext,
+        result |= tas256x_reg_write(SpbContext,
             TAS256X_MISCCONFIGURATIONREG0,
             0xca);
-        n_result |= tas256x_reg_write(SpbContext,
+        result |= tas256x_reg_write(SpbContext,
             TAS256X_ICN_SW_REG,
             0x00);
     }
 
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas2564_specific(SPB_CONTEXT* SpbContext, UINT8 SpbContextID)
 {
-    NTSTATUS n_result;
+    NTSTATUS result;
 
-    n_result = tas256x_boost_volt_update(SpbContext, SpbContextID);
-    n_result = tas2564_rx_mode_update(SpbContext, 1);
+    result = tas256x_boost_volt_update(SpbContext, SpbContextID);
+    result = tas2564_rx_mode_update(SpbContext, 1);
     
-    return n_result;
+    return result;
 }
 
 /*
@@ -1026,139 +1025,139 @@ NTSTATUS tas2564_specific(SPB_CONTEXT* SpbContext, UINT8 SpbContextID)
 */
 NTSTATUS tas2562_specific(SPB_CONTEXT* SpbContext, UINT8 SpbContextID)
 {
-    NTSTATUS n_result;
+    NTSTATUS result;
 
-    n_result = tas256x_boost_volt_update(SpbContext, SpbContextID);
+    result = tas256x_boost_volt_update(SpbContext, SpbContextID);
 
-    return n_result;
+    return result;
 }
 
 NTSTATUS tas256x_set_tx_config(PDEVICE_CONTEXT pDevice) {
-    NTSTATUS status;
+    NTSTATUS result;
 
-    status = tas256x_reg_write(&pDevice->SpbContextA,
+    result = tas256x_reg_write(&pDevice->SpbContextA,
         TAS256X_TDMConfigurationReg4, 0x11);
     if (pDevice->TwoSpeakers)
-        status = tas256x_reg_write(&pDevice->SpbContextB,
+        result = tas256x_reg_write(&pDevice->SpbContextB,
             TAS256X_TDMConfigurationReg4, 0xf1);
     
-    return status;
+    return result;
 }
 
 NTSTATUS tas256x_icn_config(PDEVICE_CONTEXT pDevice) {
-    NTSTATUS status;
+    NTSTATUS result;
 
-    status = tas256x_reg_write(&pDevice->SpbContextA,
+    result = tas256x_reg_write(&pDevice->SpbContextA,
         TAS256X_REG(0, 253, 13), 0x0d);
-    status = tas256x_reg_write(&pDevice->SpbContextA,
+    result = tas256x_reg_write(&pDevice->SpbContextA,
         TAS256X_REG(0, 253, 25), 0x80);
     if (pDevice->TwoSpeakers) {
-        status = tas256x_reg_write(&pDevice->SpbContextB,
+        result = tas256x_reg_write(&pDevice->SpbContextB,
             TAS256X_REG(0, 253, 13), 0x0d);
-        status = tas256x_reg_write(&pDevice->SpbContextB,
+        result = tas256x_reg_write(&pDevice->SpbContextB,
             TAS256X_REG(0, 253, 25), 0x80);
     }
 
-    return status;
+    return result;
 }
 
 NTSTATUS tas256x_update_bosd_thr(SPB_CONTEXT* SpbContext)
 {
-    NTSTATUS status = 0;
+    NTSTATUS result = 0;
     UINT8 data = tas256x_bosd_thd;
 
-    status = tas256x_reg_bulk_write(SpbContext,
+    result = tas256x_reg_bulk_write(SpbContext,
         TAS256X_BOSD_TH, 
         &bsd_thd[data][0],
         sizeof(data));
 
-    return status;
+    return result;
 }
 
 NTSTATUS tas256x_load_ctrl_values(PDEVICE_CONTEXT pDevice)
 {
-    NTSTATUS status = 0;
+    NTSTATUS result = 0;
 
-    status = tas256x_update_playback_volume(&pDevice->SpbContextA, pDevice->SpbContextA_ID);
+    result = tas256x_update_playback_volume(&pDevice->SpbContextA, pDevice->SpbContextA_ID);
     if (pDevice->TwoSpeakers)
-        status = tas256x_update_playback_volume(&pDevice->SpbContextB, pDevice->SpbContextB_ID);
+        result = tas256x_update_playback_volume(&pDevice->SpbContextB, pDevice->SpbContextB_ID);
 
-    status = tas256x_update_bop_thr(pDevice);
+    result = tas256x_update_bop_thr(pDevice);
 
-    status = tas256x_update_bosd_thr(&pDevice->SpbContextA);
+    result = tas256x_update_bosd_thr(&pDevice->SpbContextA);
     if (pDevice->TwoSpeakers)
-        status = tas256x_update_bosd_thr(&pDevice->SpbContextB);
+        result = tas256x_update_bosd_thr(&pDevice->SpbContextB);
     
-    status = tas256x_update_boost_voltage(&pDevice->SpbContextA, pDevice->SpbContextA_ID);
+    result = tas256x_update_boost_voltage(&pDevice->SpbContextA, pDevice->SpbContextA_ID);
     if (pDevice->TwoSpeakers)
-        status = tas256x_update_boost_voltage(&pDevice->SpbContextB, pDevice->SpbContextB_ID);
+        result = tas256x_update_boost_voltage(&pDevice->SpbContextB, pDevice->SpbContextB_ID);
 
-    status = tas256x_update_current_limit(&pDevice->SpbContextA, pDevice->SpbContextA_ID);
+    result = tas256x_update_current_limit(&pDevice->SpbContextA, pDevice->SpbContextA_ID);
     if (pDevice->TwoSpeakers)
-        status = tas256x_update_current_limit(&pDevice->SpbContextB, pDevice->SpbContextB_ID);
+        result = tas256x_update_current_limit(&pDevice->SpbContextB, pDevice->SpbContextB_ID);
 
-    status = tas256x_update_limiter_enable(&pDevice->SpbContextA);
+    result = tas256x_update_limiter_enable(&pDevice->SpbContextA);
     if (pDevice->TwoSpeakers)
-        status = tas256x_update_limiter_enable(&pDevice->SpbContextB);
+        result = tas256x_update_limiter_enable(&pDevice->SpbContextB);
 
-    status = tas256x_update_limiter_attack_rate(&pDevice->SpbContextA);
+    result = tas256x_update_limiter_attack_rate(&pDevice->SpbContextA);
     if (pDevice->TwoSpeakers)
-        status = tas256x_update_limiter_attack_rate(&pDevice->SpbContextB);
+        result = tas256x_update_limiter_attack_rate(&pDevice->SpbContextB);
 
-    status = tas256x_update_limiter_attack_step_size(&pDevice->SpbContextA);
+    result = tas256x_update_limiter_attack_step_size(&pDevice->SpbContextA);
     if (pDevice->TwoSpeakers)
-        status = tas256x_update_limiter_attack_step_size(&pDevice->SpbContextB);
+        result = tas256x_update_limiter_attack_step_size(&pDevice->SpbContextB);
 
-    status = tas256x_update_limiter_release_rate(&pDevice->SpbContextA);
+    result = tas256x_update_limiter_release_rate(&pDevice->SpbContextA);
     if (pDevice->TwoSpeakers)
-        status = tas256x_update_limiter_release_rate(&pDevice->SpbContextB);
+        result = tas256x_update_limiter_release_rate(&pDevice->SpbContextB);
 
-    status = tas256x_update_limiter_release_step_size(&pDevice->SpbContextA);
+    result = tas256x_update_limiter_release_step_size(&pDevice->SpbContextA);
     if (pDevice->TwoSpeakers)
-        status = tas256x_update_limiter_release_step_size(&pDevice->SpbContextB);
+        result = tas256x_update_limiter_release_step_size(&pDevice->SpbContextB);
 
-    status = tas256x_update_vbat_lpf(&pDevice->SpbContextA);
+    result = tas256x_update_vbat_lpf(&pDevice->SpbContextA);
     if (pDevice->TwoSpeakers)
-        status = tas256x_update_vbat_lpf(&pDevice->SpbContextB);
+        result = tas256x_update_vbat_lpf(&pDevice->SpbContextB);
 
-    status = tas256x_update_bop_enable(pDevice);
-    status = tas256x_update_bop_mute(pDevice);
-    status = tas256x_update_bop_shutdown_enable(pDevice);
-    status = tas256x_update_bop_attack_rate(pDevice);
-    status = tas256x_update_bop_attack_step_size(pDevice);
-    status = tas256x_update_bop_hold_time(pDevice);
+    result = tas256x_update_bop_enable(pDevice);
+    result = tas256x_update_bop_mute(pDevice);
+    result = tas256x_update_bop_shutdown_enable(pDevice);
+    result = tas256x_update_bop_attack_rate(pDevice);
+    result = tas256x_update_bop_attack_step_size(pDevice);
+    result = tas256x_update_bop_hold_time(pDevice);
 
-    return status;
+    return result;
 }
 
 NTSTATUS tas256x_HPF_FF_Bypass(PDEVICE_CONTEXT pDevice)
 {
-    NTSTATUS status = 0;
+    NTSTATUS result = 0;
 
-    status = tas256x_reg_update_bits(&pDevice->SpbContextA,
+    result = tas256x_reg_update_bits(&pDevice->SpbContextA,
         TAS256X_PLAYBACKCONFIGURATIONREG0,
         TAS256X_PLAYBACKCONFIGURATIONREG0_DCBLOCKER_MASK,
         TAS256X_PLAYBACKCONFIGURATIONREG0_DCBLOCKER_DISABLED);
     if (pDevice->TwoSpeakers)
-        status = tas256x_reg_update_bits(&pDevice->SpbContextB,
+        result = tas256x_reg_update_bits(&pDevice->SpbContextB,
             TAS256X_PLAYBACKCONFIGURATIONREG0,
             TAS256X_PLAYBACKCONFIGURATIONREG0_DCBLOCKER_MASK,
             TAS256X_PLAYBACKCONFIGURATIONREG0_DCBLOCKER_DISABLED);
 
-    return status;
+    return result;
 }
 
 NTSTATUS tas256x_HPF_FB_Bypass(PDEVICE_CONTEXT pDevice)
 {
-    NTSTATUS status = 0;
+    NTSTATUS result = 0;
 
-    status = tas256x_reg_bulk_write(&pDevice->SpbContextA,
+    result = tas256x_reg_bulk_write(&pDevice->SpbContextA,
         TAS256X_HPF, HPF_reverse_path, sizeof(HPF_reverse_path) / sizeof(HPF_reverse_path[0]));
     if (pDevice->TwoSpeakers)
-        status = tas256x_reg_bulk_write(&pDevice->SpbContextB,
+        result = tas256x_reg_bulk_write(&pDevice->SpbContextB,
             TAS256X_HPF, HPF_reverse_path, sizeof(HPF_reverse_path) / sizeof(HPF_reverse_path[0]));
 
-    return status;
+    return result;
 }
 
 /*
@@ -1166,14 +1165,14 @@ NTSTATUS tas256x_HPF_FB_Bypass(PDEVICE_CONTEXT pDevice)
 */
 NTSTATUS tas256x_set_bitwidth_slotwidth(PDEVICE_CONTEXT pDevice, int bitwidth, int slotwidth)
 {
-    NTSTATUS status = 0;
+    NTSTATUS result = 0;
 
-    status = tas256x_rx_set_bitwidth(pDevice, bitwidth);
-    status = tas256x_rx_set_slot(pDevice, slotwidth);
-    status = tas256x_iv_slot_config(pDevice);
-    status = tas256x_iv_bitwidth_config(pDevice);
+    result = tas256x_rx_set_bitwidth(pDevice, bitwidth);
+    result = tas256x_rx_set_slot(pDevice, slotwidth);
+    result = tas256x_iv_slot_config(pDevice);
+    result = tas256x_iv_bitwidth_config(pDevice);
 
-    return status;
+    return result;
 }
 
 /*
@@ -1181,16 +1180,16 @@ NTSTATUS tas256x_set_bitwidth_slotwidth(PDEVICE_CONTEXT pDevice, int bitwidth, i
 */
 NTSTATUS tas256x_load_init(PDEVICE_CONTEXT pDevice)
 {
-    NTSTATUS status = 0;
+    NTSTATUS result = 0;
 
-    status = tas256x_set_misc_config(pDevice); // Disable OTE/OCE retry, enable IRQZ pull up
-    status = tas256x_set_tx_config(pDevice);
-    status = tas256x_set_clock_config(pDevice);
-    status = tas256x_icn_config(pDevice);
-    status = tas256x_HPF_FF_Bypass(pDevice);
-    status = tas256x_HPF_FB_Bypass(pDevice);
+    result = tas256x_set_misc_config(pDevice); // Disable OTE/OCE retry, enable IRQZ pull up
+    result = tas256x_set_tx_config(pDevice);
+    result = tas256x_set_clock_config(pDevice);
+    result = tas256x_icn_config(pDevice);
+    result = tas256x_HPF_FF_Bypass(pDevice);
+    result = tas256x_HPF_FB_Bypass(pDevice);
 
-    return status;
+    return result;
 }
 
 VOID
@@ -1230,7 +1229,7 @@ OnPrepareHardware(
 ) {
     UNREFERENCED_PARAMETER(FxResourcesRaw);
     PDEVICE_CONTEXT pDevice = DeviceGetContext(FxDevice);
-    NTSTATUS status = STATUS_SUCCESS;
+    NTSTATUS result = STATUS_SUCCESS;
     BOOLEAN fSpbResourceFoundA = FALSE;
     BOOLEAN fSpbResourceFoundB = FALSE;
     TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "%!FUNC! Entering.");
@@ -1281,19 +1280,19 @@ OnPrepareHardware(
 
     if (fSpbResourceFoundA == FALSE && fSpbResourceFoundB == FALSE)
     {
-        status = STATUS_INSUFFICIENT_RESOURCES;
+        result = STATUS_INSUFFICIENT_RESOURCES;
     }
 
-    status = SpbDeviceOpen(FxDevice, &pDevice->SpbContextA);
+    result = SpbDeviceOpen(FxDevice, &pDevice->SpbContextA);
     if(fSpbResourceFoundB)
-        status = SpbDeviceOpen(FxDevice, &pDevice->SpbContextB);
+        result = SpbDeviceOpen(FxDevice, &pDevice->SpbContextB);
 
     pDevice->TwoSpeakers = fSpbResourceFoundA && fSpbResourceFoundB;
 
     tas256x_get_chipid(pDevice);
 
     TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "%!FUNC! Leaving.");
-    return status;
+    return result;
 }
 
 NTSTATUS
@@ -1303,7 +1302,7 @@ OnReleaseHardware(
 ) {
     UNREFERENCED_PARAMETER(FxResourcesTranslated);
     PDEVICE_CONTEXT pDevice = DeviceGetContext(FxDevice);
-    NTSTATUS status = STATUS_SUCCESS;
+    NTSTATUS result = STATUS_SUCCESS;
     TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "%!FUNC! Entering.");
 
     if (pDevice->CSAudioAPICallbackObj) {
@@ -1321,7 +1320,7 @@ OnReleaseHardware(
         SpbDeviceClose(&pDevice->SpbContextB);
 
     TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "%!FUNC! Leaving.");
-    return status;
+    return result;
 }
 
 NTSTATUS
@@ -1331,13 +1330,13 @@ OnD0Entry(
 ) {
     UNREFERENCED_PARAMETER(FxPreviousState);
     PDEVICE_CONTEXT pDevice = DeviceGetContext(FxDevice);
-    NTSTATUS status = STATUS_SUCCESS;
+    NTSTATUS result = STATUS_SUCCESS;
     TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "%!FUNC! Entering.");
     
     tas256x_load_config(pDevice);
 
     TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "%!FUNC! Leaving.");
-    return status;
+    return result;
 }
 
 NTSTATUS
@@ -1347,13 +1346,13 @@ OnD0Exit(
 ) {
     UNREFERENCED_PARAMETER(FxPreviousState);
     PDEVICE_CONTEXT pDevice = DeviceGetContext(FxDevice);
-    NTSTATUS status = STATUS_SUCCESS;
+    NTSTATUS result = STATUS_SUCCESS;
     TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "%!FUNC! Entering.");
 
     tas256x_set_power_state(pDevice, 1);
 
     TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "%!FUNC! Leaving.");
-    return status;
+    return result;
 }
 
 int CsAudioArg2 = 1;
@@ -1437,7 +1436,7 @@ OnSelfManagedIoInit(
     WDFDEVICE FxDevice
 ) {
     PDEVICE_CONTEXT pDevice = DeviceGetContext(FxDevice);
-    NTSTATUS status = STATUS_SUCCESS;
+    NTSTATUS result = STATUS_SUCCESS;
     TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "%!FUNC! Entering.");
 
     // CS Audio Callback
@@ -1453,10 +1452,10 @@ OnSelfManagedIoInit(
         NULL
     );
 
-    status = ExCreateCallback(&pDevice->CSAudioAPICallback, &attributes, TRUE, TRUE);
-    if (!NT_SUCCESS(status)) {
+    result = ExCreateCallback(&pDevice->CSAudioAPICallback, &attributes, TRUE, TRUE);
+    if (!NT_SUCCESS(result)) {
 
-        return status;
+        return result;
     }
 
     pDevice->CSAudioAPICallbackObj = ExRegisterCallback(pDevice->CSAudioAPICallback,
@@ -1472,7 +1471,7 @@ OnSelfManagedIoInit(
     TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "%!FUNC! Leaving.");
 
 
-    return status;
+    return result;
 }
 
 NTSTATUS
@@ -1483,7 +1482,7 @@ Tas2562CreateDevice(
     WDF_OBJECT_ATTRIBUTES deviceAttributes;
     PDEVICE_CONTEXT deviceContext;
     WDFDEVICE device;
-    NTSTATUS status;
+    NTSTATUS result;
 
     PAGED_CODE();
     TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "%!FUNC! Entering.");
@@ -1499,7 +1498,7 @@ Tas2562CreateDevice(
 
     WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(&deviceAttributes, DEVICE_CONTEXT);
 
-    status = WdfDeviceCreate(&DeviceInit, &deviceAttributes, &device);
+    result = WdfDeviceCreate(&DeviceInit, &deviceAttributes, &device);
 
     WDF_DEVICE_STATE deviceState;
     WDF_DEVICE_STATE_INIT(&deviceState);
@@ -1509,9 +1508,9 @@ Tas2562CreateDevice(
 
     deviceContext = DeviceGetContext(device);
 
-    status = WdfWaitLockCreate(
+    result = WdfWaitLockCreate(
         WDF_NO_OBJECT_ATTRIBUTES,
         &deviceContext->StartLock);
 
-    return status;
+    return result;
 }
