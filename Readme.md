@@ -12,8 +12,7 @@
 
 ## Issues
 
-- Sometimes it takes about 5 seconds for sound to appear(POCO X3 PRO)
-- Sometimes speakers can produce very loud sound while switching between music tracks or videos
+- If you find anything please report it
 
 ## Credits
 
