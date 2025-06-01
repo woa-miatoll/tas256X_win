@@ -144,6 +144,7 @@ NTSTATUS tas256x_reg_update_bits(
         result = STATUS_SUCCESS;
         return result;
     }
+
     result = tas256x_reg_write(SpbContext, reg, temp_val);
 
     return result;
@@ -1205,10 +1206,13 @@ tas256x_load_config(
         tas256x_software_reset(&pDevice->SpbContextB);
     tas256x_iv_slot_config(pDevice);
     tas256x_load_init(pDevice);
-    tas256x_update_rx_cfg(&pDevice->SpbContextA, 1);
     if (pDevice->TwoSpeakers) {
+        tas256x_update_rx_cfg(&pDevice->SpbContextA, 1);
         tas256x_update_rx_cfg(&pDevice->SpbContextB, 2);
         tas2564_specific(&pDevice->SpbContextB, pDevice->SpbContextB_ID);
+    }
+    else {
+        tas256x_update_rx_cfg(&pDevice->SpbContextA, 3);
     }
     tas2562_specific(&pDevice->SpbContextA, pDevice->SpbContextA_ID);
     tas256x_load_ctrl_values(pDevice);
