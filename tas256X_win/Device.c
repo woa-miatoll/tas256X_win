@@ -12,8 +12,8 @@
 
  UINT8 p_icn_threshold[] = { 0x64, 0x00, 0x01, 0x2f, 0x2c };
  UINT8 p_icn_hysteresis[] = { 0x6c, 0x00, 0x01, 0x5d, 0xc0 };
- UINT8 p_2562_dvc[] = { 0x0c, 0x10, 0x10, 0x00, 0x00 };
- UINT8 p_2564_dvc[] = { 0x0c, 0x10, 0x10, 0x00, 0x00 };
+ UINT8 p_2562_dvc[] = { 0x0c, 0x50, 0x92, 0x3B, 0xE4 };
+ UINT8 p_2564_dvc[] = { 0x0c, 0x50, 0x92, 0x3B, 0xE4 };
 
  UINT8 HPF_reverse_path[] = { 0x70, 
     0x7F, 0xFF, 0xFF, 0xFF, 
@@ -618,14 +618,21 @@ NTSTATUS tas256x_update_bop_hold_time(PDEVICE_CONTEXT pDevice)
 
 int tas256x_get_chipid(PDEVICE_CONTEXT pDevice)
 {
-    int result = 0;
+    int result = STATUS_SUCCESS;
 
-    result = tas256x_reg_read(&pDevice->SpbContextA,
-        TAS256X_CHIPID, &pDevice->SpbContextA_ID);
-    if (pDevice->TwoSpeakers)
-        result = tas256x_reg_read(&pDevice->SpbContextB,
-            TAS256X_CHIPID, &pDevice->SpbContextB_ID);
-
+    result = tas256x_reg_read(&pDevice->SpbContextA, TAS256X_CHIPID, &pDevice->SpbContextA_ID);
+    if (pDevice->SpbContextA_ID != TAS2564_CHIP || pDevice->SpbContextA_ID != TAS2562_CHIP1 || pDevice->SpbContextA_ID != TAS2562_CHIP2) {
+        TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "%!FUNC! Unsupported Chip ID.");
+        return STATUS_INVALID_PARAMETER;
+    }
+    if (pDevice->TwoSpeakers) {
+        result = tas256x_reg_read(&pDevice->SpbContextB, TAS256X_CHIPID, &pDevice->SpbContextB_ID);
+        if (pDevice->SpbContextA_ID != TAS2564_CHIP || pDevice->SpbContextA_ID != TAS2562_CHIP1 || pDevice->SpbContextA_ID != TAS2562_CHIP2) {
+            TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "%!FUNC! Unsupported Chip ID.");
+            return STATUS_INVALID_PARAMETER;
+        }
+    }
+    
     return result;
 }
 
@@ -938,10 +945,12 @@ NTSTATUS tas256x_update_playback_volume(SPB_CONTEXT* SpbContext, UINT8 SpbContex
     switch (SpbContextID) {
     case TAS2562_CHIP1:
     case TAS2562_CHIP2:
-        result = tas256x_reg_bulk_write(SpbContext, TAS256X_DVC_PCM, &dvc_pcm[tas256x_dvc_pcm][0], sizeof(tas256x_dvc_pcm));
+      //  result = tas256x_reg_bulk_write(SpbContext, TAS256X_DVC_PCM, &dvc_pcm[tas256x_dvc_pcm][0], sizeof(tas256x_dvc_pcm));
+        result = tas256x_reg_bulk_write(SpbContext, TAS256X_DVC_PCM, &p_2562_dvc[0], sizeof(p_2562_dvc));
         break;
     case TAS2564_CHIP:
-        result = tas256x_reg_bulk_write(SpbContext, TAS256X_DVC_PCM, &dvc_pcm[tas256x_dvc_pcm][0], sizeof(tas256x_dvc_pcm));
+      //  result = tas256x_reg_bulk_write(SpbContext, TAS256X_DVC_PCM, &dvc_pcm[tas256x_dvc_pcm][0], sizeof(tas256x_dvc_pcm));
+        result = tas256x_reg_bulk_write(SpbContext, TAS256X_DVC_PCM, &p_2564_dvc[0], sizeof(p_2564_dvc));
         break;
     }
 
@@ -1196,6 +1205,8 @@ VOID
 tas256x_load_config(
     PDEVICE_CONTEXT pDevice
 ) {
+    NTSTATUS result = STATUS_SUCCESS;
+
     PAGED_CODE();
     TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "%!FUNC! Enter!");
     WdfWaitLockAcquire(pDevice->StartLock, NULL);
@@ -1289,7 +1300,11 @@ OnPrepareHardware(
 
     pDevice->TwoSpeakers = fSpbResourceFoundA && fSpbResourceFoundB;
 
-    tas256x_get_chipid(pDevice);
+    result = tas256x_get_chipid(pDevice);
+    if (!NT_SUCCESS(result)) {
+        TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "%!FUNC! Failed to read Chip ID.");
+        return result;
+    }
 
     TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "%!FUNC! Leaving.");
     return result;
