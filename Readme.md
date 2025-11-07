@@ -2,8 +2,9 @@
 
 ## Notes
 
-- This driver has not been completed yet and bugs may exist
+- This driver is mostly complete but bugs may and do exist
 - This driver is mainly applicable to Xiaomi devices that use TAS2562 or TAS2564, specifically Redmi Note 9 Series and POCO X3 series
+- Supported configurations by the driver: Single TAS2562/TAS2564, Dual TAS2562/2564
 
 ## Important for people wanting to try it out on other devices
 
@@ -12,8 +13,7 @@
 
 ## Issues
 
-- Sometimes it takes about 5 seconds for sound to appear(POCO X3 PRO)
-- Sometimes speakers can produce very loud sound while switching between music tracks or videos
+- If you find anything please report it
 
 ## Credits
 
