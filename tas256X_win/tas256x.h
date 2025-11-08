@@ -1,12 +1,5 @@
 #pragma once
 
-#define CODEC_PM
-
-#define bool int
-
-#define true 1
-#define false 0
-
 /* Page Control Register */
 #define TAS256X_PAGECTL_REG			0
 
@@ -458,6 +451,11 @@
 #define tas2564_bop_att_rate 1
 #define tas2564_bop_att_stp_size 1
 #define tas2564_bop_hld_time 6
+
+#define TAS256X_MDELAY 0xFFFFFFFE
+#define TAS256X_MSLEEP 0xFFFFFFFD
+#define TAS256X_IVSENSER_ENABLE  1
+#define TAS256X_IVSENSER_DISABLE 0
 
 typedef enum
 {
