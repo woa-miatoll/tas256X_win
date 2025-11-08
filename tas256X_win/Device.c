@@ -10,17 +10,17 @@
 #pragma alloc_text (PAGE, Tas2562CreateDevice)
 #endif
 
- UINT8 p_icn_threshold[] = { 0x64, 0x00, 0x01, 0x2f, 0x2c };
- UINT8 p_icn_hysteresis[] = { 0x6c, 0x00, 0x01, 0x5d, 0xc0 };
- UINT8 p_2562_dvc[] = { 0x0c, 0x50, 0x92, 0x3B, 0xE4 };
- UINT8 p_2564_dvc[] = { 0x0c, 0x50, 0x92, 0x3B, 0xE4 };
+UINT8 p_icn_threshold[] = { 0x64, 0x00, 0x01, 0x2f, 0x2c };
+UINT8 p_icn_hysteresis[] = { 0x6c, 0x00, 0x01, 0x5d, 0xc0 };
+UINT8 p_2562_dvc[] = { 0x0c, 0x50, 0x92, 0x3B, 0xE4 };
+UINT8 p_2564_dvc[] = { 0x0c, 0x50, 0x92, 0x3B, 0xE4 };
 
- UINT8 HPF_reverse_path[] = { 0x70, 
+UINT8 HPF_reverse_path[] = { 0x70, 
     0x7F, 0xFF, 0xFF, 0xFF, 
     0x00, 0x00, 0x00, 0x00, 
     0x00, 0x00, 0x00, 0x00 };
 
- UINT8 bsd_thd[16][4] = {
+UINT8 bsd_thd[16][4] = {
     {0x28, 0x00, 0x00, 0x00}, {0x29, 0x99, 0x99, 0x99}, {0x2B, 0x33, 0x33, 0x33},
     {0x2C, 0xCC, 0xCC, 0xCC}, {0x2E, 0x66, 0x66, 0x66}, {0x30, 0x00, 0x00, 0x00},
     {0x31, 0x99, 0x99, 0x99}, {0x33, 0x33, 0x33, 0x33}, {0x34, 0xCC, 0xCC, 0xCC},
@@ -29,7 +29,7 @@
     {0x40, 0x00, 0x00, 0x00}
  };
 
- UINT8 dvc_pcm[57][5] = {
+UINT8 dvc_pcm[57][5] = {
     {0x0c, 0x00, 0x00, 0x0D, 0x43}, {0x0c, 0x00, 0x00, 0x10, 0xB3}, {0x0c, 0x00, 0x00, 0x15, 0x05},
     {0x0c, 0x00, 0x00, 0x1A, 0x77}, {0x0c, 0x00, 0x00, 0x21, 0x51}, {0x0c, 0x00, 0x00, 0x29, 0xF1},
     {0x0c, 0x00, 0x00, 0x34, 0xCE}, {0x0c, 0x00, 0x00, 0x42, 0x7A}, {0x0c, 0x00, 0x00, 0x53, 0xB0},
@@ -51,7 +51,7 @@
     {0x0c, 0x32, 0xD6, 0x46, 0x18}, {0x0c, 0x40, 0x00, 0x00, 0x00}, {0x0c, 0x50, 0x92, 0x3B, 0xE4}
 };
 
- UINT8 bop_thd[16][5] = {
+UINT8 bop_thd[16][5] = {
     {0x28, 0x28, 0x00, 0x00, 0x00}, {0x28, 0x29, 0x99, 0x99, 0x99}, {0x28, 0x2B, 0x33, 0x33, 0x33},
     {0x28, 0x2C, 0xCC, 0xCC, 0xCC}, {0x28, 0x2E, 0x66, 0x66, 0x66}, {0x28, 0x30, 0x00, 0x00, 0x00},
     {0x28, 0x31, 0x99, 0x99, 0x99}, {0x28, 0x33, 0x33, 0x33, 0x33}, {0x28, 0x34, 0xCC, 0xCC, 0xCC},
@@ -925,7 +925,7 @@ NTSTATUS tas2564_specific(SPB_CONTEXT* SpbContext, UINT8 SpbContextID)
     NTSTATUS result;
 
     result = tas256x_boost_volt_update(SpbContext, SpbContextID);
-    result = tas2564_rx_mode_update(SpbContext, 1);
+    result = tas2564_rx_mode_update(SpbContext, 0);
     
     return result;
 }
@@ -1118,21 +1118,25 @@ OnPrepareHardware(
     _In_  WDFCMRESLIST  FxResourcesRaw,
     _In_  WDFCMRESLIST  FxResourcesTranslated
 ) {
-    UNREFERENCED_PARAMETER(FxResourcesRaw);
     PDEVICE_CONTEXT pDevice = DeviceGetContext(FxDevice);
     NTSTATUS result = STATUS_SUCCESS;
     BOOLEAN fSpbResourceFoundA = FALSE;
     BOOLEAN fSpbResourceFoundB = FALSE;
+    BOOLEAN fIrqResourceFoundA = FALSE;
+    BOOLEAN fIrqResourceFoundB = FALSE;
+    WDF_INTERRUPT_CONFIG interruptConfigA;
+    WDF_INTERRUPT_CONFIG interruptConfigB;
     TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DEVICE, "%!FUNC! Entering.");
 
     ULONG resourceCount = WdfCmResourceListGetCount(FxResourcesTranslated);
 
     for (ULONG i = 0; i < resourceCount; i++) {
-        PCM_PARTIAL_RESOURCE_DESCRIPTOR pDescriptor;
+        PCM_PARTIAL_RESOURCE_DESCRIPTOR pDescriptor, pDescriptorRaw;
         UCHAR Class;
         UCHAR Type;
 
         pDescriptor = WdfCmResourceListGetDescriptor(FxResourcesTranslated, i);
+        pDescriptorRaw = WdfCmResourceListGetDescriptor(FxResourcesRaw, i);
 
         switch (pDescriptor->Type) {
         case CmResourceTypeConnection:
@@ -1164,12 +1168,43 @@ OnPrepareHardware(
                 }
             }
             break;
+        case CmResourceTypeInterrupt:
+            Class = pDescriptor->u.Connection.Class;
+            Type = pDescriptor->u.Connection.Type;
+
+            if (fIrqResourceFoundB == FALSE && fIrqResourceFoundA == TRUE)
+                {
+                    WDF_INTERRUPT_CONFIG_INIT(
+				        &interruptConfigB,
+				        Tas2562EvtInterruptIsr,
+				        NULL
+			        );
+
+                    interruptConfigB.InterruptTranslated = pDescriptor;
+                    interruptConfigB.InterruptRaw = pDescriptorRaw;
+                    interruptConfigB.PassiveHandling = TRUE;
+                    fIrqResourceFoundB = TRUE;
+                }
+            if (fIrqResourceFoundA == FALSE)
+                {
+                    WDF_INTERRUPT_CONFIG_INIT(
+				        &interruptConfigA,
+				        Tas2562EvtInterruptIsr,
+				        NULL
+			        );
+
+                    interruptConfigA.InterruptTranslated = pDescriptor;
+                    interruptConfigA.InterruptRaw = pDescriptorRaw;
+                    interruptConfigA.PassiveHandling = TRUE;
+                    fIrqResourceFoundA = TRUE;
+                }
+            break;
         default:
             break;
         }
     }
 
-    if (fSpbResourceFoundA == FALSE && fSpbResourceFoundB == FALSE)
+    if ((fSpbResourceFoundA == FALSE && fSpbResourceFoundB == FALSE) || (fIrqResourceFoundA == FALSE || fIrqResourceFoundB == FALSE))
     {
         result = STATUS_INSUFFICIENT_RESOURCES;
         TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE, "%!FUNC! No devices found.");
@@ -1179,8 +1214,15 @@ OnPrepareHardware(
     result = SpbDeviceOpen(FxDevice, &pDevice->SpbContextA);
     if(fSpbResourceFoundB)
         result &= SpbDeviceOpen(FxDevice, &pDevice->SpbContextB);
+    if (!NT_SUCCESS(result))  {
+        goto exit;
+    }
 
     pDevice->TwoSpeakers = fSpbResourceFoundA && fSpbResourceFoundB;
+
+    result &= tas256x_software_reset(&pDevice->SpbContextA);
+    if (pDevice->TwoSpeakers)
+        result &= tas256x_software_reset(&pDevice->SpbContextB);
 
     result = tas256x_get_chipid(pDevice);
 
@@ -1418,4 +1460,18 @@ Tas2562CreateDevice(
 exit:
     TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DEVICE, "%!FUNC! Leaving.");
     return result;
+}
+
+BOOLEAN
+Tas2562EvtInterruptIsr(
+	WDFINTERRUPT Interrupt,
+	ULONG MessageID
+)
+{
+    UNREFERENCED_PARAMETER(Interrupt);
+	UNREFERENCED_PARAMETER(MessageID);
+    
+    TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DEVICE, "hi irq");
+
+	return TRUE;
 }

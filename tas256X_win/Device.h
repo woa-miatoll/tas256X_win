@@ -19,6 +19,8 @@ typedef struct _DEVICE_CONTEXT
     UINT8                   SpbContextA_ID;
     SPB_CONTEXT             SpbContextB;
     UINT8                   SpbContextB_ID;
+    WDFINTERRUPT            InterruptA;
+    WDFINTERRUPT            InterruptB;        
     BOOLEAN                 TwoSpeakers;
     PCALLBACK_OBJECT        CSAudioAPICallback;
     PVOID                   CSAudioAPICallbackObj;
@@ -43,5 +45,7 @@ NTSTATUS
 Tas2562CreateDevice(
     _Inout_ PWDFDEVICE_INIT DeviceInit
 );
+
+EVT_WDF_INTERRUPT_ISR Tas2562EvtInterruptIsr;
 
 EXTERN_C_END

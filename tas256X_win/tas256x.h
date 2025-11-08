@@ -417,7 +417,7 @@
 
 #define RESTART_MAX 3
 
-#define tas256x_dvc_pcm 55
+#define tas256x_dvc_pcm 30
 #define tas256x_lim_max_attn 7
 #define tas256x_lim_thr_max 13
 #define tas256x_lim_thr_min 3
