@@ -69,8 +69,8 @@ NTSTATUS tas256x_change_book_page(SPB_CONTEXT* SpbContext, UINT32 book, UINT32 p
     buf[1] = page;
     result = SpbDeviceWrite(SpbContext, buf, sizeof(buf));
 
-    if (!NT_SUCCESS(status)) {
-        return status;
+    if (!NT_SUCCESS(result)) {
+        return result;
     }
 
     buf[0] = TAS256X_BOOKCTL_REG;
@@ -106,8 +106,8 @@ NTSTATUS tas256x_reg_write_shared(
 
     result = tas256x_reg_write(&pDevice->SpbContextA, reg, data);
 
-    if (!NT_SUCCESS(status)) {
-        return status;
+    if (!NT_SUCCESS(result)) {
+        return result;
     }
 
     if (pDevice->TwoSpeakers) {
@@ -146,8 +146,8 @@ NTSTATUS tas256x_reg_bulk_write_shared(
     NTSTATUS result;
     result = tas256x_reg_bulk_write(&pDevice->SpbContextA, reg, (UINT8*)data, (UINT8)length);
 
-    if (!NT_SUCCESS(status)) {
-        return status;
+    if (!NT_SUCCESS(result)) {
+        return result;
     }
 
     if (pDevice->TwoSpeakers) {
@@ -168,8 +168,8 @@ NTSTATUS tas256x_reg_read(
 
     result = tas256x_change_book_page(SpbContext, TAS256X_BOOK_ID(reg), TAS256X_PAGE_ID(reg));
 
-    if (!NT_SUCCESS(status)) {
-        return status;
+    if (!NT_SUCCESS(result)) {
+        return result;
     }
 
     result = SpbDeviceWriteRead(SpbContext, &reg8, &raw_data, sizeof(UCHAR), sizeof(UINT8));
